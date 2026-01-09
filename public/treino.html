@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Treino - OldBook</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar navbar-dark">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html">← Voltar</a>
+      <span class="fw-bold" id="treinoNome"></span>
+    </div>
+  </nav>
+
+  <!--Criamos a pagina aqui com o id exercicios para integrar os exercicios com JS-->
+  <div class="container my-4">
+    <div id="exercicios"></div>
+    <button class="btn btn-success mt-4" onclick="salvarTreino()">Salvar treino</button>
+  </div>
+
+  <script>
+    //puxa o treino
+    const treino = JSON.parse(localStorage.getItem("treinoSelecionado"));
+
+    const container = document.getElementById("exercicios");
+    document.getElementById("treinoNome").textContent = treino.nome;
+
+    const exercicios = [
+      { nome: treino.primeiro_ex, series: treino.series_pri_ex, peso: treino.peso_pri_ex, reps: treino.reps_pri_ex },
+      { nome: treino.segundo_ex, series: treino.series_seg_ex, peso: treino.peso_seg_ex, reps: treino.reps_seg_ex },
+      { nome: treino.terceiro_ex, series: treino.series_ter_ex, peso: treino.peso_ter_ex, reps: treino.reps_ter_ex }
+       ];
+
+    //Pega todos os exercicios e itera com forEach
+    exercicios.forEach((ex, i) => {
+      // cria os inputs numéricos de acordo com o número de séries
+      let inputsReps = '';
+      for (let s = 0; s < Number(ex.series); s++) {
+        const valor = ex.reps && ex.reps[s] ? ex.reps[s] : '';
+        inputsReps += `
+          <input 
+            type="number" 
+            id="reps-${i}-${s}" 
+            class="form-control form-control-sm d-inline-block me-2 mb-2" 
+            style="width: 70px; text-align: center;" 
+            value="${valor}">
+        `;
+      }
+
+      //Bloco de div do execício
+      const bloco = `
+        <div class="card p-3 mb-3 shadow-sm">
+          <h5 class="mb-3">${ex.nome}</h5>
+          <p>Séries: ${ex.series}</p>
+          <p>Peso atual: <b>${ex.peso}</b></p>
+
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Repetições de hoje:</label><br>
+            ${inputsReps}
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Novo peso:</label>
+            <input 
+              type="number" 
+              id="peso-${i}" 
+              class="form-control me-2" 
+              placeholder="${ex.peso}">
+          </div>
+        </div>
+      `;
+      container.innerHTML += bloco;
+    });
+
+
+    function salvarTreino() {
+      // Monta os novos dados de reps e peso
+      const atualizacoes = exercicios.map((ex, i) => {
+        const repsNovas = [];
+        for (let s = 0; s < Number(ex.series); s++) {
+          const valor = document.getElementById(`reps-${i}-${s}`).value;
+          repsNovas.push(Number(valor) || 0);
+        }
+        return {
+          nome: ex.nome,
+          reps: repsNovas,
+          peso: document.getElementById(`peso-${i}`).value || ex.peso
+        };
+      });
+
+      // Pega os dados atuais
+      let treinos = JSON.parse(localStorage.getItem("treinos")) || [];
+      let treinoAtual = JSON.parse(localStorage.getItem("treinoSelecionado"));
+      const index = treinos.findIndex(t => t.nome === treinoAtual.nome);
+
+      if (index !== -1) {
+        treinos[index].reps_pri_ex = atualizacoes[0].reps;
+        treinos[index].peso_pri_ex = atualizacoes[0].peso;
+
+        treinos[index].reps_seg_ex = atualizacoes[1].reps;
+        treinos[index].peso_seg_ex = atualizacoes[1].peso;
+
+        treinos[index].reps_ter_ex = atualizacoes[2].reps;
+        treinos[index].peso_ter_ex = atualizacoes[2].peso;
+
+        // Atualiza o treinoSelecionado também
+        localStorage.setItem("treinoSelecionado", JSON.stringify(treinos[index]));
+      }
+
+      // Salva os treinos atualizados
+      localStorage.setItem("treinos", JSON.stringify(treinos));
+
+      alert("✅ Treino salvo com sucesso!");
+    }
+
+  </script>
+</body>
+</html>
