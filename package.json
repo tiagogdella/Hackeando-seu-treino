@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/tiagogdella/TheBook#readme",
   "dependencies": {
-    "better-sqlite3": "^12.4.6"
+    "better-sqlite3": "^12.4.6",
+    "express": "^5.2.1"
   }
 }
