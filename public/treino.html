@@ -15,107 +15,244 @@
     </div>
   </nav>
 
-  <!--Criamos a pagina aqui com o id exercicios para integrar os exercicios com JS-->
   <div class="container my-4">
     <div id="exercicios"></div>
-    <button class="btn btn-success mt-4" onclick="salvarTreino()">Salvar treino</button>
+    <button class="btn btn-success mt-4" id="btnFinalizar">Finalizar treino</button>
   </div>
 
   <script>
-    //puxa o treino
-    const treino = JSON.parse(localStorage.getItem("treinoSelecionado"));
+    let treinoId = null;
+    let execucaoId = null;
+    let treino = null;
+    let ultimoTreino = null;
 
-    const container = document.getElementById("exercicios");
-    document.getElementById("treinoNome").textContent = treino.nome;
+    // Carrega treino e inicia execução
+    async function iniciarTreino() {
+      treinoId = localStorage.getItem("treinoSelecionado");
 
-    const exercicios = [
-      { nome: treino.primeiro_ex, series: treino.series_pri_ex, peso: treino.peso_pri_ex, reps: treino.reps_pri_ex },
-      { nome: treino.segundo_ex, series: treino.series_seg_ex, peso: treino.peso_seg_ex, reps: treino.reps_seg_ex },
-      { nome: treino.terceiro_ex, series: treino.series_ter_ex, peso: treino.peso_ter_ex, reps: treino.reps_ter_ex }
-       ];
-
-    //Pega todos os exercicios e itera com forEach
-    exercicios.forEach((ex, i) => {
-      // cria os inputs numéricos de acordo com o número de séries
-      let inputsReps = '';
-      for (let s = 0; s < Number(ex.series); s++) {
-        const valor = ex.reps && ex.reps[s] ? ex.reps[s] : '';
-        inputsReps += `
-          <input 
-            type="number" 
-            id="reps-${i}-${s}" 
-            class="form-control form-control-sm d-inline-block me-2 mb-2" 
-            style="width: 70px; text-align: center;" 
-            value="${valor}">
-        `;
+      if (!treinoId) {
+        alert("Erro: Nenhum treino selecionado");
+        window.location.href = "index.html";
+        return;
       }
 
-      //Bloco de div do execício
-      const bloco = `
-        <div class="card p-3 mb-3 shadow-sm">
-          <h5 class="mb-3">${ex.nome}</h5>
-          <p>Séries: ${ex.series}</p>
-          <p>Peso atual: <b>${ex.peso}</b></p>
+      try {
+        // Busca detalhes do treino
+        const resposta = await fetch(`/api/treinos/${treinoId}`);
+        treino = await resposta.json();
 
-          <div class="mb-2">
-            <label class="form-label fw-semibold">Repetições de hoje:</label><br>
-            ${inputsReps}
-          </div>
+        document.getElementById("treinoNome").textContent = treino.nome;
 
-          <div class="mb-2">
-            <label class="form-label fw-semibold">Novo peso:</label>
-            <input 
-              type="number" 
-              id="peso-${i}" 
-              class="form-control me-2" 
-              placeholder="${ex.peso}">
-          </div>
-        </div>
-      `;
-      container.innerHTML += bloco;
-    });
+        // Busca dados do último treino (se existir)
+        const resUltimo = await fetch(`/api/treinos/${treinoId}/ultimo`);
+        ultimoTreino = await resUltimo.json();
 
+        // Inicia nova execução
+        const resExec = await fetch(`/api/treinos/${treinoId}/executar`, {
+          method: "POST"
+        });
+        const dadosExec = await resExec.json();
+        execucaoId = dadosExec.execucao_id;
 
-    function salvarTreino() {
-      // Monta os novos dados de reps e peso
-      const atualizacoes = exercicios.map((ex, i) => {
-        const repsNovas = [];
-        for (let s = 0; s < Number(ex.series); s++) {
-          const valor = document.getElementById(`reps-${i}-${s}`).value;
-          repsNovas.push(Number(valor) || 0);
-        }
-        return {
-          nome: ex.nome,
-          reps: repsNovas,
-          peso: document.getElementById(`peso-${i}`).value || ex.peso
-        };
-      });
+        // Renderiza exercícios
+        renderizarExercicios();
 
-      // Pega os dados atuais
-      let treinos = JSON.parse(localStorage.getItem("treinos")) || [];
-      let treinoAtual = JSON.parse(localStorage.getItem("treinoSelecionado"));
-      const index = treinos.findIndex(t => t.nome === treinoAtual.nome);
-
-      if (index !== -1) {
-        treinos[index].reps_pri_ex = atualizacoes[0].reps;
-        treinos[index].peso_pri_ex = atualizacoes[0].peso;
-
-        treinos[index].reps_seg_ex = atualizacoes[1].reps;
-        treinos[index].peso_seg_ex = atualizacoes[1].peso;
-
-        treinos[index].reps_ter_ex = atualizacoes[2].reps;
-        treinos[index].peso_ter_ex = atualizacoes[2].peso;
-
-        // Atualiza o treinoSelecionado também
-        localStorage.setItem("treinoSelecionado", JSON.stringify(treinos[index]));
+      } catch (erro) {
+        alert("Erro ao carregar treino: " + erro.message);
+        window.location.href = "index.html";
       }
-
-      // Salva os treinos atualizados
-      localStorage.setItem("treinos", JSON.stringify(treinos));
-
-      alert("✅ Treino salvo com sucesso!");
     }
 
+    function renderizarExercicios() {
+      const container = document.getElementById("exercicios");
+      container.innerHTML = "";
+
+      treino.exercicios.forEach((ex, i) => {
+        // Busca dados do último treino para este exercício
+        let dadosUltimo = null;
+        if (ultimoTreino.existe) {
+          dadosUltimo = ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === ex.id);
+        }
+
+        const numSeriesInicial = dadosUltimo ? dadosUltimo.series.length : 3;
+        const isIsometrico = ex.tipo === 'isometrico';
+        const labelUnidade = isIsometrico ? 'Segundos' : 'Repetições';
+        const emojiTipo = isIsometrico ? '⏱️' : '🏋️';
+
+        const bloco = `
+          <div class="card p-3 mb-3 shadow-sm">
+            <h5 class="mb-3">${emojiTipo} ${ex.nome}</h5>
+
+            <div class="mb-2">
+              <label class="form-label fw-semibold">Quantas séries você fez?</label>
+              <input
+                type="number"
+                id="numSeries-${i}"
+                class="form-control"
+                min="1"
+                max="15"
+                value="${numSeriesInicial}"
+                onchange="gerarInputsSeries(${i})">
+            </div>
+
+            <div id="seriesContainer-${i}"></div>
+          </div>
+        `;
+        container.innerHTML += bloco;
+
+        // Gera inputs com dados pré-preenchidos
+        gerarInputsSeries(i);
+      });
+    }
+
+    function gerarInputsSeries(exIndex) {
+      const exercicio = treino.exercicios[exIndex];
+      const numSeries = document.getElementById(`numSeries-${exIndex}`).value;
+      const container = document.getElementById(`seriesContainer-${exIndex}`);
+
+      // Busca dados do último treino para este exercício
+      let dadosUltimo = null;
+      if (ultimoTreino.existe) {
+        dadosUltimo = ultimoTreino.series_por_exercicio.find(s => s.exercicio_id === exercicio.id);
+      }
+
+      const isIsometrico = exercicio.tipo === 'isometrico';
+      const labelUnidade = isIsometrico ? 'Segundos' : 'Repetições';
+
+      container.innerHTML = "";
+
+      for (let s = 0; s < numSeries; s++) {
+        // Pré-preenche com dados do último treino (se existir)
+        let pesoAnterior = "";
+        let repsAnterior = "";
+
+        if (dadosUltimo && dadosUltimo.series[s]) {
+          pesoAnterior = dadosUltimo.series[s].peso;
+          repsAnterior = dadosUltimo.series[s].repeticoes;
+        }
+
+        container.innerHTML += `
+          <div class="row mb-2">
+            <div class="col">
+              <label class="form-label">Série ${s + 1} - Peso (kg):</label>
+              <input
+                type="number"
+                id="peso-${exIndex}-${s}"
+                class="form-control"
+                min="0"
+                step="0.5"
+                value="${pesoAnterior}"
+                placeholder="${pesoAnterior || 'Ex: 80'}">
+            </div>
+            <div class="col">
+              <label class="form-label">${labelUnidade}:</label>
+              <input
+                type="number"
+                id="reps-${exIndex}-${s}"
+                class="form-control"
+                min="1"
+                value="${repsAnterior}"
+                placeholder="${repsAnterior || (isIsometrico ? 'Ex: 30' : 'Ex: 10')}">
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    async function finalizarTreino() {
+      if (!execucaoId) {
+        alert("Erro: Execução não foi iniciada");
+        return;
+      }
+
+      const btnFinalizar = document.getElementById("btnFinalizar");
+      btnFinalizar.disabled = true;
+      btnFinalizar.textContent = "Salvando...";
+
+      try {
+        // Coleta dados de todas as séries
+        let ordemGlobal = 1;
+
+        for (let i = 0; i < treino.exercicios.length; i++) {
+          const exercicio = treino.exercicios[i];
+          const numSeries = document.getElementById(`numSeries-${i}`).value;
+
+          for (let s = 0; s < numSeries; s++) {
+            const peso = document.getElementById(`peso-${i}-${s}`).value;
+            const reps = document.getElementById(`reps-${i}-${s}`).value;
+
+            if (!peso || !reps) {
+              const isIsometrico = exercicio.tipo === 'isometrico';
+              const unidade = isIsometrico ? 'segundos' : 'reps';
+              alert(`Preencha peso e ${unidade} da série ${s + 1} do exercício ${exercicio.nome}`);
+              btnFinalizar.disabled = false;
+              btnFinalizar.textContent = "Finalizar treino";
+              return;
+            }
+
+            // Salva série na API
+            await fetch(`/api/execucoes/${execucaoId}/series`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                exercicio_id: exercicio.id,
+                peso: parseFloat(peso),
+                repeticoes: parseInt(reps),
+                ordem: ordemGlobal
+              })
+            });
+
+            ordemGlobal++;
+          }
+        }
+
+        // Finaliza execução (calcula volume)
+        const resFinal = await fetch(`/api/execucoes/${execucaoId}/finalizar`, {
+          method: "POST"
+        });
+
+        const resultado = await resFinal.json();
+
+        // Busca progressão
+        const resProgressao = await fetch(`/api/treinos/${treinoId}/progressao`);
+        const progressao = await resProgressao.json();
+
+        // Mostra resultado
+        let mensagem = `✅ Treino finalizado!\n\n`;
+        mensagem += `Volume total: ${resultado.volume_total.toFixed(2)}\n\n`;
+
+        if (progressao.progresso_percentual !== null) {
+          const emoji = progressao.progresso_percentual >= 0 ? "📈" : "📉";
+          mensagem += `${emoji} Progressão desde a base: ${progressao.progresso_percentual.toFixed(2)}%\n\n`;
+        }
+
+        if (progressao.delta_reps_por_exercicio && progressao.delta_reps_por_exercicio.length > 0) {
+          mensagem += `Δ desde o último treino:\n`;
+          progressao.delta_reps_por_exercicio.forEach(item => {
+            // Verifica se é isométrico para mostrar unidade correta
+            const ex = treino.exercicios.find(e => e.nome === item.exercicio_nome);
+            const unidade = ex && ex.tipo === 'isometrico' ? 'seg' : 'reps';
+
+            const emoji = item.delta_reps >= 0 ? "✅" : "⚠️";
+            mensagem += `${emoji} ${item.exercicio_nome}: ${item.delta_reps > 0 ? '+' : ''}${item.delta_reps} ${unidade}\n`;
+          });
+        }
+
+        alert(mensagem);
+        window.location.href = "index.html";
+
+      } catch (erro) {
+        alert("Erro ao finalizar treino: " + erro.message);
+        btnFinalizar.disabled = false;
+        btnFinalizar.textContent = "Finalizar treino";
+      }
+    }
+
+    // Event listeners
+    document.getElementById("btnFinalizar").addEventListener("click", finalizarTreino);
+
+    // Inicia ao carregar página
+    iniciarTreino();
   </script>
 </body>
 </html>

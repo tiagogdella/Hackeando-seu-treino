@@ -1,114 +1,120 @@
-// Treino exemplo como se fosse import
-treino = {
-  nome: "Peito e Tríceps",
-  data: "2026-01-07",
-  exercicios: [
-    {
-      nome: "Supino Reto",
-      series: [
-        { reps: 10, peso: 80 },
-        { reps: 9,  peso: 80 },
-        { reps: 8,  peso: 80 }
-    ]
-    },
-    {
-      nome: "Crucifixo Máquina",
-      series: [
-        { reps: 12, peso: 40 },
-        { reps: 11, peso: 40 },
-        { reps: 10, peso: 40 }
-      ]
-    },
-    {
-      nome: "Tríceps Testa",
-      series: [
-        { reps: 10, peso: 30 },
-        { reps: 9,  peso: 30 },
-        { reps: 8,  peso: 30 }
-      ]
-    }
-  ]
-}
+/**
+ * Lógica de Progressive Overload usando a Fórmula de Epley
+ *
+ * Fórmula: 1RM = peso × (1 + reps / 30)
+ *
+ * Conceitos:
+ * - Volume do exercício = soma dos 1RM estimados de todas as séries
+ * - Fator de fadiga aplicado (junk volume) baseado na ordem da série
+ * - Treinos só devem ser comparados consigo mesmos (Base → Último → Atual)
+ */
 
-//Volume total = reps × peso (somado de todas as séries)
-//Mais carga = mais progressive - 54kg a + de peso
-//Formula de Epley para 1RM vai metrificar o progressive =
-//Epley = 1RM = peso × (1 + reps / 30)
-//Exemplo: Treino 1:
-//1RM = 80 × (1 + 8/30)  = 101,3 kg
-//Treino 2:
-//1RM = 80 × (1 + 10/30) = 106,6 kg = 5,2% de aumento
-//Agora precisamos levar em consideração o volume do treino
-//Total = (80x(1+10/30))+(80x(1+9/30))+(80x(1+8/30))= 
-//106,66 + 104,00 + 101,33 = 311,99
-//Dessa forma treinos podem ser comparados a si mesmo, 
-// no quisito carga,repetições ou numeros de exercicios.
-//Porem, não podem ser comparados a outros treinos. 
-//lEVAR EM CONTA JunkVolume - pesos das series 
-
+/**
+ * Retorna o multiplicador de peso baseado no índice da série (fadiga)
+ * Séries iniciais têm peso 1.0, séries posteriores têm peso reduzido
+ *
+ * @param {number} index - Índice da série (0-based)
+ * @returns {number} Multiplicador de peso (0.05 a 1.0)
+ */
 function getPesoSerie(index) {
   const pesos = [
-    1.0,  // 1
-    1.0,  // 2
-    1.0,  // 3
-    0.9,  // 4
-    0.9,  // 5
-    0.8,  // 6
-    0.8,  // 7
-    0.7,  // 8
-    0.6,  // 9
-    0.55, // 10
-    0.4,  // 11
-    0.3,  // 12
-    0.2,  // 13
-    0.1,  // 14
-    0.1   // 15
-  ]
+    1.0,  // 1ª série
+    1.0,  // 2ª série
+    1.0,  // 3ª série
+    0.9,  // 4ª série
+    0.9,  // 5ª série
+    0.8,  // 6ª série
+    0.8,  // 7ª série
+    0.7,  // 8ª série
+    0.6,  // 9ª série
+    0.55, // 10ª série
+    0.4,  // 11ª série
+    0.3,  // 12ª série
+    0.2,  // 13ª série
+    0.1,  // 14ª série
+    0.1   // 15ª série
+  ];
 
-  return pesos[index] ?? 0.05
+  return pesos[index] ?? 0.05; // Séries 16+ têm peso mínimo
 }
 
-function calcularVolumeExercicio(exercicio, contadorSeries) {
-  let volumeExercicio = 0
-
-  exercicio.series.forEach(serie => {
-    const peso = Number(serie.peso)
-    const reps = Number(serie.reps)
-
-    const rmEstimado = peso * (1 + reps / 30)
-
-    const pesoSerie = getPesoSerie(contadorSeries.valor)
-
-    volumeExercicio += rmEstimado * pesoSerie
-
-    contadorSeries.valor++ // avança globalmente
-  })
-
-  return volumeExercicio
+/**
+ * Calcula o 1RM estimado usando a Fórmula de Epley
+ *
+ * @param {number} peso - Peso utilizado na série
+ * @param {number} repeticoes - Repetições realizadas
+ * @returns {number} 1RM estimado
+ */
+export function calcular1RM(peso, repeticoes) {
+  return peso * (1 + repeticoes / 30);
 }
 
-function calcularVolumeTreino(exercicios) {
-  let volumeTreino = 0
-  const contadorSeries = { valor: 0 }
+/**
+ * Calcula o volume total de uma execução de treino
+ * Aplica fator de fadiga (junk volume) baseado na ordem global das séries
+ *
+ * @param {Array} series - Array de séries no formato: [{peso, repeticoes, ordem}, ...]
+ * @returns {number} Volume total calculado
+ */
+export function calcularVolume1RM(series) {
+  let volumeTotal = 0;
 
-  exercicios.forEach(exercicio => {
-    const volumeEx = calcularVolumeExercicio(exercicio, contadorSeries)
-    console.log(
-      `Volume ${exercicio.nome}:`,
-      volumeEx.toFixed(2),
-      `| Série final: ${contadorSeries.valor}`
-    )
-    volumeTreino += volumeEx
-  })
+  // Ordena séries pela ordem para aplicar fadiga corretamente
+  const seriesOrdenadas = [...series].sort((a, b) => a.ordem - b.ordem);
 
-  return volumeTreino
+  seriesOrdenadas.forEach((serie, index) => {
+    const peso = Number(serie.peso);
+    const reps = Number(serie.repeticoes);
+
+    // Calcula 1RM estimado para a série
+    const rmEstimado = calcular1RM(peso, reps);
+
+    // Aplica fator de fadiga
+    const pesoSerie = getPesoSerie(index);
+
+    // Acumula no volume total
+    volumeTotal += rmEstimado * pesoSerie;
+  });
+
+  return volumeTotal;
 }
 
-const volumeTotalTreino = calcularVolumeTreino(treino.exercicios)
+/**
+ * Calcula o volume de um exercício específico
+ *
+ * @param {Array} seriesDoExercicio - Array de séries de um único exercício
+ * @returns {number} Volume do exercício
+ */
+export function calcularVolumeExercicio(seriesDoExercicio) {
+  return calcularVolume1RM(seriesDoExercicio);
+}
 
-document.getElementById('resultado').innerText =
-  `Volume total do treino: ${volumeTotalTreino.toFixed(2)}`
+/**
+ * Calcula a progressão percentual entre dois volumes
+ *
+ * @param {number} volumeBase - Volume inicial (baseline)
+ * @param {number} volumeAtual - Volume atual
+ * @returns {number} Percentual de progressão
+ */
+export function calcularProgressaoPercentual(volumeBase, volumeAtual) {
+  if (volumeBase === 0 || volumeBase == null) {
+    return 0;
+  }
 
+  const delta = volumeAtual - volumeBase;
+  return (delta / volumeBase) * 100;
+}
 
+/**
+ * Calcula o delta de repetições entre duas execuções
+ *
+ * @param {Array} seriesBase - Séries da execução base
+ * @param {Array} seriesAtual - Séries da execução atual
+ * @returns {number} Diferença total de repetições
+ */
+export function calcularDeltaReps(seriesBase, seriesAtual) {
+  const repsBase = seriesBase.reduce((sum, s) => sum + Number(s.repeticoes), 0);
+  const repsAtual = seriesAtual.reduce((sum, s) => sum + Number(s.repeticoes), 0);
 
-
+  return repsAtual - repsBase;
+}

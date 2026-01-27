@@ -12,42 +12,56 @@ const dbPath = path.join(__dirname, "../DB/database.db");
 const db = new Database(dbPath);
 
 db.exec(`
+-- Catálogo de treinos (templates: "Treino A", "Treino B", etc.)
 CREATE TABLE IF NOT EXISTS treinos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nome TEXT NOT NULL,
-  data TEXT NOT NULL
+  data_criacao TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS exercicios_base (
+-- Catálogo de exercícios únicos (nomes globais: "Supino", "Agachamento", etc.)
+CREATE TABLE IF NOT EXISTS exercicios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nome TEXT NOT NULL UNIQUE,
-  volume_base REAL NOT NULL,
-  data_base TEXT NOT NULL
+  nome TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS exercicio_progresso (
+-- Quais exercícios fazem parte de cada treino (relação N:N)
+CREATE TABLE IF NOT EXISTS treino_exercicios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  exercicio_id INTEGER NOT NULL UNIQUE,
-
-  volume_baseline REAL NOT NULL,
-  data_baseline TEXT NOT NULL,
-
-  volume_ultimo REAL NOT NULL,
-  progresso_percentual REAL NOT NULL,
-  data_ultimo_treino TEXT NOT NULL,
-
-  FOREIGN KEY (exercicio_id) REFERENCES exercicios_base(id)
+  treino_id INTEGER NOT NULL,
+  exercicio_id INTEGER NOT NULL,
+  ordem INTEGER NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'normal',
+  FOREIGN KEY (treino_id) REFERENCES treinos(id) ON DELETE CASCADE,
+  FOREIGN KEY (exercicio_id) REFERENCES exercicios(id),
+  UNIQUE(treino_id, exercicio_id),
+  CHECK(tipo IN ('normal', 'isometrico'))
 );
 
-CREATE TABLE IF NOT EXISTS progressive_logic (
+-- Cada execução de um treino (histórico: Base → Último → Atual)
+CREATE TABLE IF NOT EXISTS execucoes_treino (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  exercicio_nome TEXT NOT NULL UNIQUE,
-  volume_baseline REAL NOT NULL,
-  data_baseline TEXT NOT NULL,
-  volume_ultimo REAL NOT NULL,
-  progresso_percentual REAL NOT NULL,
-  data_ultimo_treino TEXT NOT NULL
+  treino_id INTEGER NOT NULL,
+  data_execucao TEXT NOT NULL,
+  volume_total REAL,
+  FOREIGN KEY (treino_id) REFERENCES treinos(id) ON DELETE CASCADE
 );
+
+-- Séries individuais de cada execução (dados crus: peso + reps)
+CREATE TABLE IF NOT EXISTS series (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  execucao_id INTEGER NOT NULL,
+  exercicio_id INTEGER NOT NULL,
+  peso REAL NOT NULL,
+  repeticoes INTEGER NOT NULL,
+  ordem INTEGER NOT NULL,
+  FOREIGN KEY (execucao_id) REFERENCES execucoes_treino(id) ON DELETE CASCADE,
+  FOREIGN KEY (exercicio_id) REFERENCES exercicios(id)
+);
+
+-- Índices para otimizar queries comuns
+CREATE INDEX IF NOT EXISTS idx_execucoes_treino ON execucoes_treino(treino_id, data_execucao);
+CREATE INDEX IF NOT EXISTS idx_series_execucao ON series(execucao_id);
 `);
 
 export default db;
