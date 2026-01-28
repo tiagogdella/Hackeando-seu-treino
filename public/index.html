@@ -3,26 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OldBook Treinos - Home</title>
+  <title>Hackeando seu Treino - Home</title>
+  <link rel="icon" type="image/png" href="IMG/logoCompleto.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <nav class="navbar navbar-dark">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="#">OldBook Treinos</a>
+      <div class="w-100 text-center">
+        <pre class="ascii-logo mb-2">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐
+╠═╣├─┤│  ├┴┐├┤ ├─┤│││ │││ │  └─┐├┤ │ │   ║ ├┬┘├┤ │││││ │
+╩ ╩┴ ┴└─┘┴ ┴└─┘┴ ┴┘└┘─┴┘└─┘  └─┘└─┘└─┘   ╩ ┴└─└─┘┴┘└┘└─┘</pre>
+        <a class="navbar-brand fw-bold d-block" href="#">&lt;/&gt; Hackeando seu Treino</a>
+      </div>
     </div>
   </nav>
 
   <div class="container my-5">
-    <h2 class="text-center mb-4">Meus Treinos Atuais</h2>
+    <h2 class="text-center mb-4 terminal-command">Lista de Treinos</h2>
     <div id="treinos" class="row g-4"></div>
   </div>
 
   <div class="container my-5 center contBotaoAddTreino">
-    <a class="btn btn-primary btn-sm" href="cadTreino.html">Cadastrar novo treino</a>
+    <a class="btn btn-primary btn-sm terminal-command" href="cadTreino.html">novo_treino</a>
   </div>
 
+  <script src="JSFiles/terminal.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

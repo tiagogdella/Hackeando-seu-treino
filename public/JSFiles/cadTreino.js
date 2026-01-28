@@ -15,20 +15,20 @@ function addExercicio() {
   const divTipo = document.createElement("div");
   divTipo.classList.add("mb-2");
   divTipo.innerHTML = `
-    <label class="form-label fw-semibold">Tipo:</label><br>
+    <label class="form-label fw-semibold terminal-prompt">Tipo</label><br>
     <div class="form-check form-check-inline">
       <input class="form-check-input tipo-radio" type="radio" name="tipoExercicio" value="normal" checked>
-      <label class="form-check-label">Normal (repetições)</label>
+      <label class="form-check-label">Normal (reps)</label>
     </div>
     <div class="form-check form-check-inline">
       <input class="form-check-input tipo-radio" type="radio" name="tipoExercicio" value="isometrico">
-      <label class="form-check-label">Isométrico (segundos)</label>
+      <label class="form-check-label">Isométrico (seg)</label>
     </div>
   `;
 
   const btnConfirmar = document.createElement("button");
-  btnConfirmar.textContent = "Confirmar exercício";
-  btnConfirmar.classList.add("btn", "btn-success", "btn-sm", "mb-3");
+  btnConfirmar.textContent = "confirmar_exercicio";
+  btnConfirmar.classList.add("btn", "btn-success", "btn-sm", "mb-3", "terminal-command");
 
   container.appendChild(inputNomeEx);
   container.appendChild(divTipo);
@@ -38,7 +38,7 @@ function addExercicio() {
     const nomeEx = inputNomeEx.value.trim();
 
     if (!nomeEx) {
-      alert("Digite o nome do exercício!");
+      window.Terminal.showError("Digite o nome do exercício!");
       return;
     }
 
@@ -68,8 +68,8 @@ function addExercicio() {
     if (!document.getElementById("btnFinalizar")) {
       const btnFinalizar = document.createElement("button");
       btnFinalizar.id = "btnFinalizar";
-      btnFinalizar.textContent = "Salvar treino";
-      btnFinalizar.classList.add("btn", "btn-success", "btn-lg");
+      btnFinalizar.textContent = "salvar_treino";
+      btnFinalizar.classList.add("btn", "btn-success", "btn-lg", "terminal-command");
       btnFinalizar.addEventListener("click", salvarTreino);
 
       const containerBotao = document.getElementById("containerBotaoFinalizar");
@@ -82,12 +82,12 @@ async function salvarTreino() {
   const nomeTreino = document.getElementById("nomeTreino").value.trim();
 
   if (!nomeTreino) {
-    alert("Digite o nome do treino!");
+    window.Terminal.showError("Digite o nome do treino!");
     return;
   }
 
   if (exerciciosAdicionados.length === 0) {
-    alert("Adicione pelo menos um exercício!");
+    window.Terminal.showError("Adicione pelo menos um exercício!");
     return;
   }
 
@@ -106,9 +106,11 @@ async function salvarTreino() {
     }
 
     const resultado = await resposta.json();
-    alert(`✅ Treino "${nomeTreino}" criado com sucesso!`);
-    window.location.href = "index.html";
+    window.Terminal.showSuccess(`Treino "${nomeTreino}" criado com sucesso!`);
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1500);
   } catch (erro) {
-    alert("❌ Erro ao salvar treino: " + erro.message);
+    window.Terminal.showError("Erro ao salvar treino: " + erro.message);
   }
 }

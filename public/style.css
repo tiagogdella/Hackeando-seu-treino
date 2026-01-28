@@ -1,34 +1,448 @@
+/* ====================================
+   Hackeando seu Treino - Matrix Theme
+   ==================================== */
+
+:root {
+  /* Paleta de Cores Matrix */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-card: #0f0f0f;
+  --terminal-green: #00ff00;
+  --terminal-green-dark: #00cc00;
+  --terminal-green-glow: rgba(0, 255, 0, 0.3);
+  --text-primary: #00ff00;
+  --text-secondary: #00cc00;
+  --border-color: #00ff00;
+  --black: #000000;
+}
+
+/* Reset e Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  background: linear-gradient(135deg, #1e1e2f, #2a2a4d);
-  color: #fff;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 255, 0, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse at top left, rgba(0, 255, 0, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(0, 255, 0, 0.05) 0%, transparent 50%),
+    var(--bg-primary);
+  color: var(--terminal-green);
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
   min-height: 100vh;
+  line-height: 1.6;
+  position: relative;
 }
 
+/* Efeito de scanlines sutil */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 0, 0.03) 0px,
+    transparent 1px,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.3;
+}
+
+/* Garante que o conteúdo fique acima das scanlines */
+body > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Navbar Terminal */
 .navbar {
-  background-color: #29294d !important;
+  background-color: var(--black) !important;
+  border-bottom: 2px solid var(--terminal-green);
+  padding: 1rem 0;
 }
 
+.navbar-brand {
+  color: var(--terminal-green) !important;
+  font-weight: bold;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+}
+
+.navbar-brand:hover {
+  color: var(--terminal-green-dark) !important;
+  text-shadow: 0 0 10px var(--terminal-green-glow);
+}
+
+/* ASCII Art Logo */
+.ascii-logo {
+  font-size: 0.7rem;
+  line-height: 1.1;
+  color: var(--terminal-green);
+  white-space: pre;
+  text-align: center;
+  margin: 0 auto;
+  font-family: monospace;
+  text-shadow: 0 0 10px var(--terminal-green-glow);
+  display: block;
+}
+
+.ascii-logo:hover {
+  text-shadow: 0 0 15px var(--terminal-green-glow);
+}
+
+@media (max-width: 768px) {
+  .ascii-logo {
+    font-size: 0.45rem;
+    line-height: 1.1;
+  }
+}
+
+/* Cards Terminal */
 .card {
-  background-color: #343456;
-  border: none;
-  transition: transform 0.2s ease-in-out;
-  color: #fff;
+  background-color: var(--bg-card);
+  border: 1px solid var(--terminal-green);
+  color: var(--terminal-green);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px rgba(0, 255, 0, 0.1);
 }
 
 .card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 0 15px var(--terminal-green-glow);
+  border-color: var(--terminal-green);
+}
+
+.card-title {
+  color: var(--terminal-green);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.card-body {
+  color: var(--terminal-green-dark);
+}
+
+/* Barra de Musculação ASCII */
+.barbell-container {
+  width: 100%;
+}
+
+.barbell-display {
+  font-family: monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: 0;
+  margin-bottom: 8px;
+  text-shadow: 0 0 8px var(--terminal-green-glow);
+}
+
+.barbell-display.positive {
+  color: var(--terminal-green);
+}
+
+.barbell-display.negative {
+  color: #ffa500;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.3);
+}
+
+.plates-left,
+.plates-right {
+  font-weight: bold;
+  letter-spacing: -1px;
+}
+
+.bar {
+  color: var(--terminal-green);
+  font-weight: bold;
+  margin: 0 2px;
+}
+
+.progress-label {
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .barbell-display {
+    font-size: 0.5rem;
+  }
+
+  .progress-label {
+    font-size: 0.65rem;
+  }
+}
+
+/* Botões Terminal */
+.btn {
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  border: 1px solid var(--terminal-green);
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
 
 .btn-primary {
-  background-color: #6c63ff;
-  border: none;
+  background-color: transparent;
+  border-color: var(--terminal-green);
+  color: var(--terminal-green);
 }
 
 .btn-primary:hover {
-  background-color: #5848e5;
+  background-color: var(--terminal-green);
+  color: var(--black);
+  box-shadow: 0 0 10px var(--terminal-green-glow);
+  border-color: var(--terminal-green);
+}
+
+.btn-success {
+  background-color: transparent;
+  border-color: var(--terminal-green);
+  color: var(--terminal-green);
+}
+
+.btn-success:hover {
+  background-color: var(--terminal-green);
+  color: var(--black);
+  box-shadow: 0 0 10px var(--terminal-green-glow);
 }
 
 .contBotaoAddTreino {
-  background-color: #6c63ff;
+  background-color: transparent;
+  border: 1px solid var(--terminal-green);
+  color: var(--terminal-green);
   width: 50%;
+}
+
+.contBotaoAddTreino:hover {
+  background-color: var(--terminal-green);
+  color: var(--black);
+}
+
+/* Forms Terminal */
+.form-label {
+  color: var(--terminal-green);
+  font-weight: 500;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--black);
+  border: 1px solid var(--terminal-green);
+  color: var(--terminal-green);
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--black);
+  border-color: var(--terminal-green);
+  color: var(--terminal-green);
+  box-shadow: 0 0 10px var(--terminal-green-glow);
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: var(--terminal-green-dark);
+  opacity: 0.6;
+}
+
+.form-check-input {
+  background-color: var(--black);
+  border-color: var(--terminal-green);
+}
+
+.form-check-input:checked {
+  background-color: var(--terminal-green);
+  border-color: var(--terminal-green);
+}
+
+.form-check-label {
+  color: var(--terminal-green);
+}
+
+/* Títulos e Textos */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--terminal-green);
+  font-weight: bold;
+}
+
+p {
+  color: var(--terminal-green-dark);
+}
+
+/* Links */
+a {
+  color: var(--terminal-green);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--terminal-green-dark);
+  text-shadow: 0 0 5px var(--terminal-green-glow);
+}
+
+/* Classes Auxiliares */
+.terminal-prompt::before {
+  content: '> ';
+  color: var(--terminal-green);
+  font-weight: bold;
+}
+
+.terminal-command::before {
+  content: '$ ';
+  color: var(--terminal-green);
+  font-weight: bold;
+}
+
+.terminal-glow {
+  text-shadow: 0 0 10px var(--terminal-green-glow);
+}
+
+/* Sistema de Logs */
+#terminal-logs {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.terminal-log-message {
+  background-color: var(--bg-card);
+  border: 1px solid var(--terminal-green);
+  color: var(--terminal-green);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  box-shadow: 0 0 15px var(--terminal-green-glow);
+  animation: slideInRight 0.3s ease-out, fadeOut 0.3s ease-out 2.7s;
+  opacity: 1;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.terminal-log-message .log-time {
+  color: var(--terminal-green-dark);
+  font-size: 0.8rem;
+  margin-right: 8px;
+}
+
+.terminal-log-message .log-text {
+  color: var(--terminal-green);
+}
+
+.terminal-log-message.success {
+  border-color: var(--terminal-green);
+}
+
+.terminal-log-message.error {
+  border-color: #ff0000;
+  color: #ff0000;
+}
+
+/* Animação de Typewriter */
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 0.5s steps(40, end);
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  #terminal-logs {
+    max-width: calc(100vw - 40px);
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .terminal-log-message {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
+}
+
+/* Scroll personalizado */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--terminal-green);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--terminal-green-dark);
+}
+
+/* Container principal */
+.container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+/* Alerts */
+.alert {
+  background-color: var(--bg-card);
+  border: 1px solid var(--terminal-green);
+  color: var(--terminal-green);
+}
+
+.alert-success {
+  border-color: var(--terminal-green);
+}
+
+.alert-danger {
+  border-color: #ff0000;
+  color: #ff0000;
 }
