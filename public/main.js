@@ -29,41 +29,7 @@ function renderizarTreinos() {
     let progressaoHtml = '';
     if (treino.progressao !== null && treino.progressao !== undefined) {
       const sinal = treino.progressao >= 0 ? '+' : '';
-      const progressoAbs = Math.abs(treino.progressao);
-
-      // Calcula quantas anilhas desenhar (cada 10% = 1 anilha)
-      const numAnilhas = Math.min(Math.floor(progressoAbs / 10), 10);
-      const anilha = '██';
-      const barraVazia = '░░';
-
-      // Desenha a barra com anilhas
-      let barraEsquerda = '';
-      let barraDireita = '';
-
-      for (let i = 0; i < 10; i++) {
-        if (i < numAnilhas) {
-          barraEsquerda += anilha;
-          barraDireita += anilha;
-        } else {
-          barraEsquerda += barraVazia;
-          barraDireita += barraVazia;
-        }
-      }
-
-      console.log('Progressão:', treino.progressao, 'Anilhas:', numAnilhas);
-
-      const corClasse = treino.progressao >= 0 ? 'positive' : 'negative';
-
-      progressaoHtml = `
-        <div class="barbell-container mb-3">
-          <div class="barbell-display ${corClasse}">
-            <span class="plates-left">${barraEsquerda}</span>
-            <span class="bar">═══════</span>
-            <span class="plates-right">${barraDireita}</span>
-          </div>
-          <div class="progress-label terminal-command">Progressive_overload ${sinal}${treino.progressao}%</div>
-        </div>
-      `;
+      progressaoHtml = `<p class="mb-2 terminal-command" style="font-size: 0.85rem;">Progressive_overload ${sinal}${treino.progressao}%</p>`;
     } else if (treino.total_execucoes === 0) {
       progressaoHtml = `<p class="mb-3" style="font-size: 0.85rem; color: var(--terminal-green-dark);">Ainda não executado</p>`;
     }

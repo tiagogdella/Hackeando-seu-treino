@@ -105,6 +105,33 @@ body > * {
   }
 }
 
+/* Barra Decorativa SVG */
+.barbell-divider {
+  text-align: center;
+  margin-top: 15px;
+  margin-bottom: 10px;
+}
+
+.barbell-svg {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  color: var(--terminal-green);
+  filter: drop-shadow(0 0 8px var(--terminal-green-glow));
+  transition: all 0.3s ease;
+}
+
+.barbell-svg:hover {
+  filter: drop-shadow(0 0 15px var(--terminal-green-glow));
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .barbell-svg {
+    max-width: 350px;
+  }
+}
+
 /* Cards Terminal */
 .card {
   background-color: var(--bg-card);
@@ -130,56 +157,6 @@ body > * {
   color: var(--terminal-green-dark);
 }
 
-/* Barra de Musculação ASCII */
-.barbell-container {
-  width: 100%;
-}
-
-.barbell-display {
-  font-family: monospace;
-  font-size: 0.7rem;
-  line-height: 1.5;
-  text-align: center;
-  letter-spacing: 0;
-  margin-bottom: 8px;
-  text-shadow: 0 0 8px var(--terminal-green-glow);
-}
-
-.barbell-display.positive {
-  color: var(--terminal-green);
-}
-
-.barbell-display.negative {
-  color: #ffa500;
-  text-shadow: 0 0 8px rgba(255, 165, 0, 0.3);
-}
-
-.plates-left,
-.plates-right {
-  font-weight: bold;
-  letter-spacing: -1px;
-}
-
-.bar {
-  color: var(--terminal-green);
-  font-weight: bold;
-  margin: 0 2px;
-}
-
-.progress-label {
-  font-size: 0.7rem;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .barbell-display {
-    font-size: 0.5rem;
-  }
-
-  .progress-label {
-    font-size: 0.65rem;
-  }
-}
 
 /* Botões Terminal */
 .btn {
@@ -214,17 +191,6 @@ body > * {
   box-shadow: 0 0 10px var(--terminal-green-glow);
 }
 
-.contBotaoAddTreino {
-  background-color: transparent;
-  border: 1px solid var(--terminal-green);
-  color: var(--terminal-green);
-  width: 50%;
-}
-
-.contBotaoAddTreino:hover {
-  background-color: var(--terminal-green);
-  color: var(--black);
-}
 
 /* Forms Terminal */
 .form-label {
