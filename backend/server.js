@@ -1,17 +1,22 @@
 import express from "express";
 import db from "../DB/db.js";
 import { calcularVolume1RM } from "./logic/ProgressiveLogic.js";
+import { sessionMiddleware } from './middleware/session.js';
+import { requireAuth } from './middleware/auth.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
+app.use(sessionMiddleware);
+app.use('/api/auth', authRoutes);
 
 /* =========================
    TREINOS (Templates)
 ========================= */
 
 // Criar novo treino (template)
-app.post("/api/treinos", (req, res) => {
+app.post("/api/treinos", requireAuth, (req, res) => {
   const { nome, exercicios } = req.body;
 
   if (!nome || nome.trim() === "") {
@@ -21,7 +26,7 @@ app.post("/api/treinos", (req, res) => {
   const data_criacao = new Date().toISOString();
 
   try {
-    const result = db.prepare("INSERT INTO treinos (nome, data_criacao) VALUES (?, ?)").run(nome, data_criacao);
+    const result = db.prepare("INSERT INTO treinos (nome, data_criacao, user_id) VALUES (?, ?, ?)").run(nome, data_criacao, req.user.id);
     const treino_id = result.lastInsertRowid;
 
     // Se forneceu exercícios, adiciona ao treino
@@ -51,7 +56,7 @@ app.post("/api/treinos", (req, res) => {
 });
 
 // Listar todos os treinos
-app.get("/api/treinos", (req, res) => {
+app.get("/api/treinos", requireAuth, (req, res) => {
   const treinos = db.prepare(`
     SELECT
       t.id,
@@ -60,18 +65,19 @@ app.get("/api/treinos", (req, res) => {
       COUNT(DISTINCT e.id) as total_execucoes
     FROM treinos t
     LEFT JOIN execucoes_treino e ON e.treino_id = t.id
+    WHERE t.user_id = ?
     GROUP BY t.id
     ORDER BY t.id DESC
-  `).all();
+  `).all(req.user.id);
 
   res.json(treinos);
 });
 
 // Obter detalhes de um treino específico
-app.get("/api/treinos/:id", (req, res) => {
+app.get("/api/treinos/:id", requireAuth, (req, res) => {
   const { id } = req.params;
 
-  const treino = db.prepare("SELECT * FROM treinos WHERE id = ?").get(id);
+  const treino = db.prepare("SELECT * FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
 
   if (!treino) {
     return res.status(404).json({ erro: "Treino não encontrado" });
@@ -89,8 +95,28 @@ app.get("/api/treinos/:id", (req, res) => {
   res.json({ ...treino, exercicios });
 });
 
+// Deletar um treino
+app.delete("/api/treinos/:id", requireAuth, (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verifica se treino existe e pertence ao usuário
+    const treino = db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
+    if (!treino) {
+      return res.status(404).json({ erro: "Treino não encontrado" });
+    }
+
+    // Deleta o treino (CASCADE vai deletar exercícios e execuções relacionadas)
+    db.prepare("DELETE FROM treinos WHERE id = ?").run(id);
+
+    res.json({ sucesso: true });
+  } catch (erro) {
+    res.status(500).json({ erro: erro.message });
+  }
+});
+
 // Adicionar exercício a um treino existente
-app.post("/api/treinos/:id/exercicios", (req, res) => {
+app.post("/api/treinos/:id/exercicios", requireAuth, (req, res) => {
   const { id } = req.params;
   const { nome } = req.body;
 
@@ -99,8 +125,8 @@ app.post("/api/treinos/:id/exercicios", (req, res) => {
   }
 
   try {
-    // Verifica se treino existe
-    const treino = db.prepare("SELECT id FROM treinos WHERE id = ?").get(id);
+    // Verifica se treino existe e pertence ao usuário
+    const treino = db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
     if (!treino) {
       return res.status(404).json({ erro: "Treino não encontrado" });
     }
@@ -130,18 +156,18 @@ app.post("/api/treinos/:id/exercicios", (req, res) => {
 ========================= */
 
 // Buscar dados do último treino executado (para pré-preencher)
-app.get("/api/treinos/:id/ultimo", (req, res) => {
+app.get("/api/treinos/:id/ultimo", requireAuth, (req, res) => {
   const { id } = req.params;
 
   try {
-    // Busca a última execução
+    // Busca a última execução do usuário
     const ultimaExecucao = db.prepare(`
       SELECT id, data_execucao, volume_total
       FROM execucoes_treino
-      WHERE treino_id = ?
+      WHERE treino_id = ? AND user_id = ?
       ORDER BY data_execucao DESC
       LIMIT 1
-    `).get(id);
+    `).get(id, req.user.id);
 
     if (!ultimaExecucao) {
       return res.json({ existe: false });
@@ -189,10 +215,10 @@ app.get("/api/treinos/:id/ultimo", (req, res) => {
 });
 
 // Iniciar nova execução de um treino
-app.post("/api/treinos/:id/executar", (req, res) => {
+app.post("/api/treinos/:id/executar", requireAuth, (req, res) => {
   const { id } = req.params;
 
-  const treino = db.prepare("SELECT id FROM treinos WHERE id = ?").get(id);
+  const treino = db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
   if (!treino) {
     return res.status(404).json({ erro: "Treino não encontrado" });
   }
@@ -200,7 +226,7 @@ app.post("/api/treinos/:id/executar", (req, res) => {
   const data_execucao = new Date().toISOString();
 
   try {
-    const result = db.prepare("INSERT INTO execucoes_treino (treino_id, data_execucao) VALUES (?, ?)").run(id, data_execucao);
+    const result = db.prepare("INSERT INTO execucoes_treino (treino_id, data_execucao, user_id) VALUES (?, ?, ?)").run(id, data_execucao, req.user.id);
     res.json({ execucao_id: result.lastInsertRowid, data_execucao });
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
@@ -208,7 +234,7 @@ app.post("/api/treinos/:id/executar", (req, res) => {
 });
 
 // Adicionar série a uma execução
-app.post("/api/execucoes/:id/series", (req, res) => {
+app.post("/api/execucoes/:id/series", requireAuth, (req, res) => {
   const { id } = req.params;
   const { exercicio_id, peso, repeticoes, ordem } = req.body;
 
@@ -217,6 +243,12 @@ app.post("/api/execucoes/:id/series", (req, res) => {
   }
 
   try {
+    // Verifica se a execução pertence ao usuário
+    const execucao = db.prepare("SELECT id FROM execucoes_treino WHERE id = ? AND user_id = ?").get(id, req.user.id);
+    if (!execucao) {
+      return res.status(404).json({ erro: "Execução não encontrada" });
+    }
+
     db.prepare("INSERT INTO series (execucao_id, exercicio_id, peso, repeticoes, ordem) VALUES (?, ?, ?, ?, ?)").run(id, exercicio_id, peso, repeticoes, ordem);
     res.json({ sucesso: true });
   } catch (erro) {
@@ -225,10 +257,16 @@ app.post("/api/execucoes/:id/series", (req, res) => {
 });
 
 // Finalizar execução (calcula volume total)
-app.post("/api/execucoes/:id/finalizar", (req, res) => {
+app.post("/api/execucoes/:id/finalizar", requireAuth, (req, res) => {
   const { id } = req.params;
 
   try {
+    // Verifica se a execução pertence ao usuário
+    const execucao = db.prepare("SELECT id FROM execucoes_treino WHERE id = ? AND user_id = ?").get(id, req.user.id);
+    if (!execucao) {
+      return res.status(404).json({ erro: "Execução não encontrada" });
+    }
+
     // Busca todas as séries da execução agrupadas por exercício
     const series = db.prepare(`
       SELECT exercicio_id, peso, repeticoes, ordem
@@ -254,7 +292,7 @@ app.post("/api/execucoes/:id/finalizar", (req, res) => {
 });
 
 // Obter histórico de execuções de um treino
-app.get("/api/treinos/:id/historico", (req, res) => {
+app.get("/api/treinos/:id/historico", requireAuth, (req, res) => {
   const { id } = req.params;
 
   const execucoes = db.prepare(`
@@ -265,19 +303,19 @@ app.get("/api/treinos/:id/historico", (req, res) => {
       COUNT(s.id) as total_series
     FROM execucoes_treino e
     LEFT JOIN series s ON s.execucao_id = e.id
-    WHERE e.treino_id = ?
+    WHERE e.treino_id = ? AND e.user_id = ?
     GROUP BY e.id
     ORDER BY e.data_execucao DESC
-  `).all(id);
+  `).all(id, req.user.id);
 
   res.json(execucoes);
 });
 
 // Obter detalhes de uma execução específica
-app.get("/api/execucoes/:id", (req, res) => {
+app.get("/api/execucoes/:id", requireAuth, (req, res) => {
   const { id } = req.params;
 
-  const execucao = db.prepare("SELECT * FROM execucoes_treino WHERE id = ?").get(id);
+  const execucao = db.prepare("SELECT * FROM execucoes_treino WHERE id = ? AND user_id = ?").get(id, req.user.id);
 
   if (!execucao) {
     return res.status(404).json({ erro: "Execução não encontrada" });
@@ -295,7 +333,7 @@ app.get("/api/execucoes/:id", (req, res) => {
 });
 
 // Obter progressão de um treino (Base → Último → Atual)
-app.get("/api/treinos/:id/progressao", (req, res) => {
+app.get("/api/treinos/:id/progressao", requireAuth, (req, res) => {
   const { id } = req.params;
 
   try {
@@ -303,9 +341,9 @@ app.get("/api/treinos/:id/progressao", (req, res) => {
     const execucoes = db.prepare(`
       SELECT id, data_execucao, volume_total
       FROM execucoes_treino
-      WHERE treino_id = ?
+      WHERE treino_id = ? AND user_id = ?
       ORDER BY data_execucao ASC
-    `).all(id);
+    `).all(id, req.user.id);
 
     if (execucoes.length === 0) {
       return res.json({
@@ -380,8 +418,8 @@ app.get("/api/treinos/:id/progressao", (req, res) => {
    EXERCÍCIOS
 ========================= */
 
-// Listar todos os exercícios
-app.get("/api/exercicios", (req, res) => {
+// Listar todos os exercícios (catálogo compartilhado)
+app.get("/api/exercicios", requireAuth, (req, res) => {
   const exercicios = db.prepare("SELECT * FROM exercicios ORDER BY nome").all();
   res.json(exercicios);
 });

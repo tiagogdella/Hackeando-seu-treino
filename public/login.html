@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - Hackeando seu Treino</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+      <div class="col-md-5">
+        <div class="card p-4 shadow-lg">
+          <pre class="ascii-logo text-center mb-3">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐
+╠═╣├─┤│  ├┴┐├┤ ├─┤│││ │││ │  └─┐├┤ │ │   ║ ├┬┘├┤ │││││ │
+╩ ╩┴ ┴└─┘┴ ┴└─┘┴ ┴┘└┘─┴┘└─┘  └─┘└─┘└─┘   ╩ ┴└─└─┘┴┘└┘└─┘</pre>
+
+          <h3 class="text-center mb-4 terminal-command">$ login</h3>
+
+          <form id="loginForm">
+            <div class="mb-3">
+              <label class="form-label terminal-prompt">Username</label>
+              <input
+                type="text"
+                id="username"
+                class="form-control"
+                required
+                autocomplete="username"
+                placeholder="seu_usuario">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label terminal-prompt">Senha</label>
+              <input
+                type="password"
+                id="password"
+                class="form-control"
+                required
+                autocomplete="current-password"
+                placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 terminal-command" id="btnLogin">
+              entrar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="JSFiles/terminal.js"></script>
+  <script>
+    const form = document.getElementById('loginForm');
+    const btnLogin = document.getElementById('btnLogin');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      btnLogin.disabled = true;
+      btnLogin.textContent = '$ autenticando...';
+
+      try {
+        const resposta = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          window.Terminal.showError(dados.erro || 'Erro ao fazer login');
+          btnLogin.disabled = false;
+          btnLogin.textContent = 'entrar';
+          return;
+        }
+
+        window.Terminal.showSuccess(`Bem-vindo, ${dados.usuario.username}!`);
+
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+
+      } catch (erro) {
+        window.Terminal.showError('Erro de conexão: ' + erro.message);
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'entrar';
+      }
+    });
+  </script>
+</body>
+</html>

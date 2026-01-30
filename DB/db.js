@@ -12,6 +12,20 @@ const dbPath = path.join(__dirname, "../DB/database.db");
 const db = new Database(dbPath);
 
 db.exec(`
+-- Tabela de usuários
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  nome_completo TEXT,
+  data_criacao TEXT NOT NULL,
+  ultimo_login TEXT,
+  ativo INTEGER NOT NULL DEFAULT 1,
+  CHECK(length(username) >= 3)
+);
+
+CREATE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username);
+
 -- Catálogo de treinos (templates: "Treino A", "Treino B", etc.)
 CREATE TABLE IF NOT EXISTS treinos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,5 +77,29 @@ CREATE TABLE IF NOT EXISTS series (
 CREATE INDEX IF NOT EXISTS idx_execucoes_treino ON execucoes_treino(treino_id, data_execucao);
 CREATE INDEX IF NOT EXISTS idx_series_execucao ON series(execucao_id);
 `);
+
+// Adicionar colunas user_id às tabelas existentes (se ainda não existirem)
+try {
+  db.exec('ALTER TABLE treinos ADD COLUMN user_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE');
+  console.log('✓ Coluna user_id adicionada à tabela treinos');
+} catch (e) {
+  // Coluna já existe, ignorar
+}
+
+try {
+  db.exec('ALTER TABLE execucoes_treino ADD COLUMN user_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE');
+  console.log('✓ Coluna user_id adicionada à tabela execucoes_treino');
+} catch (e) {
+  // Coluna já existe, ignorar
+}
+
+// Criar índices para performance
+try {
+  db.exec('CREATE INDEX IF NOT EXISTS idx_treinos_user ON treinos(user_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_execucoes_user ON execucoes_treino(user_id)');
+  console.log('✓ Índices de user_id criados');
+} catch (e) {
+  // Índices já existem, ignorar
+}
 
 export default db;

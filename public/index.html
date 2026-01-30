@@ -8,7 +8,10 @@
 </head>
 <body>
   <nav class="navbar navbar-dark">
-    <div class="container">
+    <div class="container position-relative">
+      <button onclick="Auth.logout()" class="btn btn-sm btn-outline-danger terminal-command position-absolute end-0 top-50 translate-middle-y" style="z-index: 10;">
+        logout
+      </button>
       <div class="w-100 text-center">
         <pre class="ascii-logo mb-2">╦ ╦┌─┐┌─┐┬┌─┌─┐┌─┐┌┐┌┌┬┐┌─┐  ┌─┐┌─┐┬ ┬  ╔╦╗┬─┐┌─┐┬┌┐┌┌─┐
 ╠═╣├─┤│  ├┴┐├┤ ├─┤│││ │││ │  └─┐├┤ │ │   ║ ├┬┘├┤ │││││ │
@@ -56,6 +59,7 @@
   </div>
 
   <script src="JSFiles/terminal.js"></script>
+  <script src="JSFiles/auth.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

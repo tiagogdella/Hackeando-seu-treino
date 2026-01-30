@@ -13,6 +13,9 @@
     <div class="container d-flex justify-content-between align-items-center">
       <a class="navbar-brand fw-bold" href="index.html">&lt; voltar</a>
       <span class="fw-bold terminal-command" id="treinoNome"></span>
+      <button onclick="Auth.logout()" class="btn btn-sm btn-outline-danger terminal-command">
+        logout
+      </button>
     </div>
   </nav>
 
@@ -22,6 +25,7 @@
   </div>
 
   <script src="JSFiles/terminal.js"></script>
+  <script src="JSFiles/auth.js"></script>
   <script>
     let treinoId = null;
     let execucaoId = null;
