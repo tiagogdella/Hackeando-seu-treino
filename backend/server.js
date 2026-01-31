@@ -7,7 +7,7 @@ import authRoutes from './routes/auth.js';
 
 const app = express();
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("docs"));
 app.use(sessionMiddleware);
 app.use('/api/auth', authRoutes);
 
