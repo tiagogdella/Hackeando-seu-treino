@@ -4,6 +4,12 @@ import { calcularVolume1RM } from "./logic/ProgressiveLogic.js";
 import { sessionMiddleware } from './middleware/session.js';
 import { requireAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
+import cors from "cors";
+
+app.use(cors({
+  origin:"https://tiagogdella.github.io/TheBook/login.html"
+}))
+
 
 const app = express();
 app.use(express.json());
