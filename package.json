@@ -5,6 +5,7 @@
   "description": "App para metrificar Progressive Overload de treinos em geral.",
   "main": "main.js",
   "scripts": {
+    "start": "node backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-user": "node backend/utils/createUser.js"
   },
