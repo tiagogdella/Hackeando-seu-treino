@@ -92,9 +92,8 @@ async function salvarTreino() {
   }
 
   try {
-    const resposta = await fetch("/api/treinos", {
+    const resposta = await apiFetch("/api/treinos", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nome: nomeTreino,
         exercicios: exerciciosAdicionados

@@ -10,7 +10,7 @@ async function verificarAutenticacao() {
   }
 
   try {
-    const resposta = await fetch('/api/auth/status');
+    const resposta = await apiFetch('/api/auth/status');
     const dados = await resposta.json();
 
     if (!dados.autenticado) {
@@ -32,7 +32,7 @@ async function verificarAutenticacao() {
 // Função de logout
 async function logout() {
   try {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await apiFetch('/api/auth/logout', { method: 'POST' });
     window.Terminal.showSuccess('Logout realizado');
     setTimeout(() => {
       window.location.href = 'login.html';

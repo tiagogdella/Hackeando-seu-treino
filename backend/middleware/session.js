@@ -15,10 +15,11 @@ export const sessionMiddleware = session({
   secret: 'hackeando-seu-treino-secret-2026', // TODO: mover para .env em produção
   resave: false,
   saveUninitialized: false,
+  proxy: true,           // Confia no proxy do Render (HTTPS)
   cookie: {
     httpOnly: true,      // Previne XSS
-    secure: false,       // true em produção com HTTPS
-    sameSite: 'strict',  // Previne CSRF
+    secure: true,        // Obrigatório com sameSite 'none'
+    sameSite: 'none',    // Permite cookies cross-origin (GitHub Pages → Render)
     maxAge: 1000 * 60 * 60 * 24 * 7 // 7 dias
   },
   name: 'sessionId'

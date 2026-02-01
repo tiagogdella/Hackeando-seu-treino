@@ -6,13 +6,12 @@ import { requireAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import cors from "cors";
 
-app.use(cors({
-  origin:"https://tiagogdella.github.io/TheBook/login.html"
-}))
-
-
 const app = express();
 app.use(express.json());
+app.use(cors({
+  origin: "https://tiagogdella.github.io",
+  credentials: true
+}));
 app.use(express.static("docs"));
 app.use(sessionMiddleware);
 app.use('/api/auth', authRoutes);

@@ -3,13 +3,13 @@ let treinos = [];
 
 // carregar treinos do banco
 async function carregarTreinos() {
-  const resposta = await fetch("/api/treinos");
+  const resposta = await apiFetch("/api/treinos");
   treinos = await resposta.json();
 
   // Busca progressão para cada treino
   for (let treino of treinos) {
     try {
-      const resProgressao = await fetch(`/api/treinos/${treino.id}/progressao`);
+      const resProgressao = await apiFetch(`/api/treinos/${treino.id}/progressao`);
       const progressao = await resProgressao.json();
       treino.progressao = progressao.progresso_percentual;
       console.log(`Treino ${treino.nome}: progressão =`, treino.progressao);
@@ -71,7 +71,7 @@ async function excluirTreino(treinoId, treinoNome) {
   }
 
   try {
-    const resposta = await fetch(`/api/treinos/${treinoId}`, {
+    const resposta = await apiFetch(`/api/treinos/${treinoId}`, {
       method: 'DELETE'
     });
 

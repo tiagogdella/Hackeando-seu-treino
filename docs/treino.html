@@ -25,6 +25,7 @@
   </div>
 
   <script src="JSFiles/terminal.js"></script>
+  <script src="JSFiles/config.js"></script>
   <script src="JSFiles/auth.js"></script>
   <script>
     let treinoId = null;
@@ -46,17 +47,17 @@
 
       try {
         // Busca detalhes do treino
-        const resposta = await fetch(`/api/treinos/${treinoId}`);
+        const resposta = await apiFetch(`/api/treinos/${treinoId}`);
         treino = await resposta.json();
 
         document.getElementById("treinoNome").textContent = treino.nome;
 
         // Busca dados do último treino (se existir)
-        const resUltimo = await fetch(`/api/treinos/${treinoId}/ultimo`);
+        const resUltimo = await apiFetch(`/api/treinos/${treinoId}/ultimo`);
         ultimoTreino = await resUltimo.json();
 
         // Inicia nova execução
-        const resExec = await fetch(`/api/treinos/${treinoId}/executar`, {
+        const resExec = await apiFetch(`/api/treinos/${treinoId}/executar`, {
           method: "POST"
         });
         const dadosExec = await resExec.json();
@@ -201,9 +202,8 @@
             }
 
             // Salva série na API
-            await fetch(`/api/execucoes/${execucaoId}/series`, {
+            await apiFetch(`/api/execucoes/${execucaoId}/series`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 exercicio_id: exercicio.id,
                 peso: parseFloat(peso),
@@ -217,14 +217,14 @@
         }
 
         // Finaliza execução (calcula volume)
-        const resFinal = await fetch(`/api/execucoes/${execucaoId}/finalizar`, {
+        const resFinal = await apiFetch(`/api/execucoes/${execucaoId}/finalizar`, {
           method: "POST"
         });
 
         const resultado = await resFinal.json();
 
         // Busca progressão
-        const resProgressao = await fetch(`/api/treinos/${treinoId}/progressao`);
+        const resProgressao = await apiFetch(`/api/treinos/${treinoId}/progressao`);
         const progressao = await resProgressao.json();
 
         // Mostra resultado

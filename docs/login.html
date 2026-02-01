@@ -51,6 +51,7 @@
   </div>
 
   <script src="JSFiles/terminal.js"></script>
+  <script src="JSFiles/config.js"></script>
   <script>
     const form = document.getElementById('loginForm');
     const btnLogin = document.getElementById('btnLogin');
@@ -65,9 +66,8 @@
       btnLogin.textContent = '$ autenticando...';
 
       try {
-        const resposta = await fetch('/api/auth/login', {
+        const resposta = await apiFetch('/api/auth/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
 
