@@ -165,12 +165,13 @@ app.get("/api/treinos/:id/ultimo", requireAuth, (req, res) => {
   const { id } = req.params;
 
   try {
-    // Busca a última execução do usuário
+    // Busca a última execução do usuário que tenha séries salvas
     const ultimaExecucao = db.prepare(`
-      SELECT id, data_execucao, volume_total
-      FROM execucoes_treino
-      WHERE treino_id = ? AND user_id = ?
-      ORDER BY data_execucao DESC
+      SELECT et.id, et.data_execucao, et.volume_total
+      FROM execucoes_treino et
+      WHERE et.treino_id = ? AND et.user_id = ?
+        AND EXISTS (SELECT 1 FROM series s WHERE s.execucao_id = et.id)
+      ORDER BY et.data_execucao DESC
       LIMIT 1
     `).get(id, req.user.id);
 

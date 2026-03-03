@@ -37,6 +37,70 @@
     let treino = null;
     let ultimoTreino = null;
 
+    // === PERSISTÊNCIA LOCAL ===
+
+    function salvarEstadoLocal() {
+      if (!treino || !treinoId || !execucaoId) return;
+      const estado = {
+        execucaoId,
+        timestamp: Date.now(),
+        exercicios: treino.exercicios.map((ex, i) => {
+          const numSeriesEl = document.getElementById(`numSeries-${i}`);
+          if (!numSeriesEl) return null;
+          const numSeries = parseInt(numSeriesEl.value);
+          const series = [];
+          for (let s = 0; s < numSeries; s++) {
+            const pesoEl = document.getElementById(`peso-${i}-${s}`);
+            const repsEl = document.getElementById(`reps-${i}-${s}`);
+            series.push({ peso: pesoEl ? pesoEl.value : '', reps: repsEl ? repsEl.value : '' });
+          }
+          return { numSeries, series };
+        })
+      };
+      localStorage.setItem(`treino_estado_${treinoId}`, JSON.stringify(estado));
+    }
+
+    function restaurarEstadoLocal(estado) {
+      if (!treino || !estado.exercicios) return;
+      if (estado.exercicios.length !== treino.exercicios.length) return;
+      estado.exercicios.forEach((exDados, i) => {
+        if (!exDados) return;
+        const numSeriesEl = document.getElementById(`numSeries-${i}`);
+        if (!numSeriesEl) return;
+        if (parseInt(numSeriesEl.value) !== exDados.numSeries) {
+          numSeriesEl.value = exDados.numSeries;
+          gerarInputsSeries(i);
+        }
+        exDados.series.forEach((serie, s) => {
+          const pesoEl = document.getElementById(`peso-${i}-${s}`);
+          const repsEl = document.getElementById(`reps-${i}-${s}`);
+          if (pesoEl && serie.peso !== '') pesoEl.value = serie.peso;
+          if (repsEl && serie.reps !== '') repsEl.value = serie.reps;
+        });
+      });
+      window.Terminal.showLog('Treino restaurado — continue de onde parou!', 'info');
+    }
+
+    function iniciarKeepalive() {
+      // Ping a cada 8 minutos para manter sessão e backend acordado
+      setInterval(async () => {
+        try {
+          const res = await apiFetch('/api/auth/status');
+          const dados = await res.json();
+          if (!dados.autenticado) {
+            window.Terminal.showError('Sessão expirada. Redirecionando...');
+            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+          }
+        } catch (e) { /* ignora erro de rede, tenta novamente no próximo ciclo */ }
+      }, 8 * 60 * 1000);
+
+      // Auto-save a cada 30 segundos
+      setInterval(salvarEstadoLocal, 30 * 1000);
+    }
+
+    // Salva antes de sair da página (reload, fechar aba, etc.)
+    window.addEventListener('beforeunload', salvarEstadoLocal);
+
     // Carrega treino e inicia execução
     async function iniciarTreino() {
       treinoId = localStorage.getItem("treinoSelecionado");
@@ -49,6 +113,22 @@
         return;
       }
 
+      // Verifica se há estado salvo recente (até 6h)
+      let estadoSalvo = null;
+      const estadoStr = localStorage.getItem(`treino_estado_${treinoId}`);
+      if (estadoStr) {
+        try {
+          const parsed = JSON.parse(estadoStr);
+          if (Date.now() - parsed.timestamp < 6 * 60 * 60 * 1000) {
+            estadoSalvo = parsed;
+          } else {
+            localStorage.removeItem(`treino_estado_${treinoId}`);
+          }
+        } catch (e) {
+          localStorage.removeItem(`treino_estado_${treinoId}`);
+        }
+      }
+
       try {
         // Busca detalhes do treino
         const resposta = await apiFetch(`/api/treinos/${treinoId}`);
@@ -56,19 +136,41 @@
 
         document.getElementById("treinoNome").textContent = treino.nome;
 
-        // Busca dados do último treino (se existir)
+        // Busca dados do último treino completo (se existir)
         const resUltimo = await apiFetch(`/api/treinos/${treinoId}/ultimo`);
         ultimoTreino = await resUltimo.json();
 
-        // Inicia nova execução
-        const resExec = await apiFetch(`/api/treinos/${treinoId}/executar`, {
-          method: "POST"
-        });
-        const dadosExec = await resExec.json();
-        execucaoId = dadosExec.execucao_id;
+        // Tenta reutilizar execução salva (evita criar várias execuções vazias)
+        if (estadoSalvo && estadoSalvo.execucaoId) {
+          try {
+            const resExec = await apiFetch(`/api/execucoes/${estadoSalvo.execucaoId}`);
+            if (resExec.ok) {
+              const dadosExec = await resExec.json();
+              if (dadosExec.volume_total == null) {
+                execucaoId = estadoSalvo.execucaoId;
+              }
+            }
+          } catch (e) { /* ignora, cria nova execução abaixo */ }
+        }
 
-        // Renderiza exercícios
+        // Cria nova execução apenas se não reutilizou uma existente
+        if (!execucaoId) {
+          const resExec = await apiFetch(`/api/treinos/${treinoId}/executar`, {
+            method: "POST"
+          });
+          const dadosExec = await resExec.json();
+          execucaoId = dadosExec.execucao_id;
+        }
+
+        // Renderiza exercícios com dados do último treino completo
         renderizarExercicios();
+
+        // Restaura estado salvo por cima (sobrescreve com o que o usuário já tinha digitado)
+        if (estadoSalvo) {
+          restaurarEstadoLocal(estadoSalvo);
+        }
+
+        iniciarKeepalive();
 
       } catch (erro) {
         window.Terminal.showError("Erro ao carregar treino: " + erro.message);
@@ -107,7 +209,7 @@
                 min="1"
                 max="15"
                 value="${numSeriesInicial}"
-                onchange="gerarInputsSeries(${i})">
+                onchange="gerarInputsSeries(${i}); salvarEstadoLocal()">
             </div>
 
             <div id="seriesContainer-${i}"></div>
@@ -157,7 +259,8 @@
                 min="0"
                 step="0.5"
                 value="${pesoAnterior}"
-                placeholder="${pesoAnterior || '80'}">
+                placeholder="${pesoAnterior || '80'}"
+                oninput="salvarEstadoLocal()">
             </div>
             <div class="col">
               <label class="form-label terminal-prompt">${labelUnidade}</label>
@@ -167,7 +270,8 @@
                 class="form-control"
                 min="1"
                 value="${repsAnterior}"
-                placeholder="${repsAnterior || (isIsometrico ? '30' : '10')}">
+                placeholder="${repsAnterior || (isIsometrico ? '30' : '10')}"
+                oninput="salvarEstadoLocal()">
             </div>
           </div>
         `;
@@ -239,6 +343,7 @@
           mensagem += ` | Progressão: ${sinal}${progressao.progresso_percentual.toFixed(2)}%`;
         }
 
+        localStorage.removeItem(`treino_estado_${treinoId}`);
         window.Terminal.showSuccess(mensagem);
 
         // Mostra deltas individuais se houver
