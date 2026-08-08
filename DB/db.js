@@ -11,7 +11,12 @@ const client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// Converte libsql Row para objeto JS simples (suporta spread, Object.keys, etc.)
+/**
+ * Converte libsql Row para objeto JS simples (suporta spread, Object.keys, etc.)
+ * @param {any} row
+ * @param {string[]} columns
+ * @returns {Record<string, any> | null}
+ */
 function toObj(row, columns) {
   if (!row) return null;
   const obj = {};
@@ -26,14 +31,17 @@ function toObj(row, columns) {
 // Wrapper com interface similar ao better-sqlite3, porém assíncrono
 function prepare(sql) {
   return {
+    /** @returns {Promise<Record<string, any>[]>} */
     async all(...args) {
       const { rows, columns } = await client.execute({ sql, args: args.flat() });
       return rows.map(r => toObj(r, columns));
     },
+    /** @returns {Promise<Record<string, any> | null>} */
     async get(...args) {
       const { rows, columns } = await client.execute({ sql, args: args.flat() });
       return rows.length ? toObj(rows[0], columns) : null;
     },
+    /** @returns {Promise<{lastInsertRowid: number, changes: number}>} */
     async run(...args) {
       const result = await client.execute({ sql, args: args.flat() });
       return {

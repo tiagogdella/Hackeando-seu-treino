@@ -5,6 +5,7 @@ import { requireAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import cors from "cors";
 import cookieParser from 'cookie-parser';
+import { AppError } from "./errors/AppError.js";
 
 const app = express();
 app.use(express.json());
@@ -470,6 +471,13 @@ app.get("/api/evolucao/dashboard", requireAuth, async (req, res) => {
   }
 });
 
+app.use((err, req, res, next) => {
+  if (err instanceof AppError) {
+    return res.status(err.status).json({ erro: err.message })
+  }
+  console.error(err)
+  res.status(500).json({ erro: 'Erro interno do servidor' })
+})
 
 /* =========================
    SERVIDOR

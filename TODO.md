@@ -54,6 +54,72 @@ Backlog de melhorias e mudanças futuras do projeto. Cada seção é uma frente 
 
 ---
 
-## 3. (placeholder pra próximas frentes)
+## 3. Reorganizar arquitetura (controllers / services / repositories)
+
+**Por quê:** hoje quase tudo (treinos, execuções, evolução) mora direto em `backend/server.js` — 486 linhas misturando rota HTTP, validação, autorização e SQL no mesmo lugar. Só `auth` foi separado em `routes/auth.js`, e mesmo assim sem services/repositories próprios. Isso já dificulta achar coisa hoje, e vai ficar pior a cada feature nova — principalmente a que está no radar (ver contexto futuro abaixo).
+
+### Contexto futuro — modelo coach/aluno (não implementar agora, só entender o porquê das decisões abaixo)
+
+Possível mudança de direção do produto: em vez de cada usuário ser dono só dos próprios treinos, existem **dois papéis**:
+
+- **Coach** (admin): cria treinos e atribui pra alunos. Cria contas de aluno. No futuro, paga pra ter alunos vinculados (freemium — grátis no início).
+- **Aluno**: só altera peso/reps dos treinos que o coach montou pra ele. Não cria, não edita estrutura, não exclui treino.
+
+Isso muda regra de autorização (quem pode fazer o quê com qual treino) de "é meu, ponto" pra "depende do papel e da relação coach↔aluno" — e provavelmente muda o schema (`usuarios` ganha um papel/relação com outro usuário; `treinos` passa a ter "quem criou" separado de "de quem é"). **Não vamos mexer nisso agora.** Mas é o motivo principal de por que vale organizar em camadas *agora*: se a regra de "posso mexer nisso?" estiver espalhada em `WHERE id = ? AND user_id = ?` direto no SQL (como está hoje), toda vez que o modelo de permissão mudar é preciso caçar e reescrever cada query. Se essa regra virar uma função de service (`treinoService.podeEditar(usuario, treino)`), o dia que o modelo mudar, muda a função, não o app inteiro.
+
+### Estrutura alvo
+
+```
+backend/
+  controllers/     # HTTP: le req, chama service, formata res. Zero SQL, zero regra de negocio.
+  services/        # regra de negocio, validacao, autorizacao, orquestracao. Chama repositories.
+  repositories/     # SO acesso a dado. Um arquivo por entidade. Espelha o SQL de hoje, so nomeado/centralizado.
+  routes/           # so liga verbo+caminho HTTP ao controller (mesmo padrao que authRoutes ja usa)
+  errors/           # classes de erro (NotFoundError, ValidationError, ForbiddenError, ConflictError)
+  middleware/        # auth.js continua aqui
+  logic/             # ProgressiveLogic.js continua aqui do jeito que esta - ja e funcao pura, nao mexe
+  utils/
+  server.js          # so cria o app, registra middlewares globais e monta os routers. Deve encolher bastante.
+```
+
+### Passos
+
+**Fase 1 — Base (uma vez só, usada por tudo depois)** ✅ concluída
+- [x] **TypeScript gradual só no backend**, via JSDoc + `checkJs` — `tsconfig.json` na raiz (`allowJs`, `checkJs`, `noEmit`, `types: ["node"]`), `typescript` + `@types/node` como devDependencies, script `npm run typecheck`. Escopo só em `backend/` e `DB/` — frontend fica de fora por agora
+- [x] `DB/db.js` anotado com JSDoc (`Record<string, any>` nos retornos) — era pré-requisito, sem isso todo repository futuro herdaria tipos incorretos
+- [x] `backend/errors/AppError.js` com `NotFoundError`, `ValidationError`, `ForbiddenError`, `ConflictError` (cada uma carrega o status HTTP correspondente)
+- [x] Middleware de erro centralizado em `server.js` — mapeia `AppError` pro status certo, qualquer outro erro cai num 500 genérico **sem vazar `err.message` cru**
+- [x] ~~Criar `asyncHandler`~~ — **desnecessário**: confirmei com teste real que o Express 5 (`^5.2.1`, já é o que o projeto usa) encaminha automaticamente `throw`/promise rejeitada de handler `async` pro middleware de erro, sem wrapper nenhum. Isso era coisa de Express 4, não se aplica aqui.
+
+**Fase 2 — Domínio de treinos (primeiro, é o mais simples)**
+- [ ] `repositories/treinoRepository.js` e `repositories/exercicioRepository.js` — extrai as queries de hoje, só isso, sem mudar comportamento
+- [ ] `services/treinoService.js` — validação + a checagem de "esse treino é desse usuário?" vira código explícito aqui (hoje é implícito no `WHERE ... AND user_id = ?`)
+- [ ] `controllers/treinoController.js` + `routes/treinoRoutes.js`
+- [ ] Remove o código equivalente de `server.js`, testa manualmente (listar/criar/editar/ativar/excluir treino) antes de seguir pro próximo domínio
+
+**Fase 3 — Domínio de execuções (mais complexo, usa `ProgressiveLogic.js`)**
+- [ ] `repositories/execucaoRepository.js` + `repositories/serieRepository.js`
+- [ ] `services/execucaoService.js` — chama `ProgressiveLogic.js` pros cálculos, não duplica a lógica matemática
+- [ ] `controllers/execucaoController.js` + `routes/execucaoRoutes.js`
+
+**Fase 4 — Domínio de evolução/dashboard**
+- [ ] `services/evolucaoService.js` (pode reaproveitar `execucaoRepository.js`)
+- [ ] `controllers/evolucaoController.js` + `routes/evolucaoRoutes.js`
+
+**Fase 5 — Alinhar auth ao mesmo padrão** (hoje só tem rota, sem service/repository explícitos)
+- [ ] `repositories/usuarioRepository.js`
+- [ ] `services/authService.js` — a lógica que hoje mora direto em `routes/auth.js` (login, register, hash de senha, emissão de token)
+- [ ] `controllers/authController.js` fino + renomeia `routes/auth.js` pra seguir o mesmo padrão dos outros domínios
+
+**Fase 6 — Fechar a base pra testes**
+- [ ] Testes unitários pro `ProgressiveLogic.js` (não depende de nada, é o ganho mais fácil e mais importante — é a lógica que hoje não tem nenhuma verificação)
+- [ ] Testes pros services usando repository fake/mockado (sem precisar do Turso real — isso também ataca o risco do relatório sobre não ter separação dev/prod: testes automatizados simplesmente não tocam o banco de verdade)
+- [ ] Decidir à parte (fica pendente, não é escopo desta seção) uma solução pra separação dev/prod do banco pra quando o teste for manual/exploratório, tipo o que aconteceu com o "ramon" de teste
+
+**Fora de escopo aqui, de propósito:** nenhuma mudança de schema, papel de usuário, ou tela nova pro modelo coach/aluno. Essa seção é só a reorganização das camadas do código que já existe hoje — o pivot vira uma seção própria no TODO quando (e se) for decidido seguir com ele.
+
+---
+
+## 4. (placeholder pra próximas frentes)
 
 Vamos adicionando aqui conforme surgirem — próximas ideias, bugs conhecidos, features.

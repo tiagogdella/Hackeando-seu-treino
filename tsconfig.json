@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": false,
+    "types": ["node"]
+  },
+  "include": ["backend/**/*.js", "DB/**/*.js"],
+  "exclude": ["node_modules", "docs", "src"]
+}
