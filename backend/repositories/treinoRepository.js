@@ -39,7 +39,7 @@ export async function criar({ nome, data_criacao, userId }) {
     return result.lastInsertRowid;
 }
 
-export async function vincularExercicio(treinoId, exercicioId, ordem, tipo) {
+export async function vincularExercicio(treinoId, exercicioId, ordem, tipo = 'normal') {
     const result = await db.prepare("INSERT INTO treino_exercicios (treino_id, exercicio_id, ordem, tipo) VALUES (?, ?, ?, ?)").run(treinoId, exercicioId, ordem, tipo);
     return result;
 }
@@ -56,7 +56,7 @@ export async function atualizarAtivo(id, userId, ativo) {
     return updated;
 }
 
-export async function removerId(id) {
+export async function removerPorId(id) {
     const removed = await db.prepare(
         'DELETE FROM treinos WHERE id = ?'
     ).run(id);

@@ -1,6 +1,6 @@
 import { NotFoundError, ValidationError } from "../errors/AppError.js";
-import { listarPorUsuario, criar as criarTreino, vincularExercicio, buscarPorId, buscarExerciciosDoTreino, atualizarAtivo, atualizarNome as atualizarNomeTreino } from "../repositories/treinoRepository.js";
-import * as exercicioRepository from "../repositories/exercicioRepository.js";
+import { listarPorUsuario, criar as criarTreino, vincularExercicio, buscarPorId, buscarExerciciosDoTreino, atualizarAtivo as atualizarAtivoTreino, atualizarNome as atualizarNomeTreino, removerPorId, buscarUltimaOrdem } from "../repositories/treinoRepository.js";
+import *as exercicioRepository from "../repositories/exercicioRepository.js";
 
 export function listar(userId) {
     return listarPorUsuario(userId);
@@ -52,4 +52,39 @@ export async function atualizarNome(id, userId, nome) {
     const nomeTratado = nome.trim();
     await atualizarNomeTreino(id, nomeTratado);
     return nomeTratado;
+}
+
+export async function atualizarAtivo(id, userId, ativo) {
+    const updated = await atualizarAtivoTreino(id, userId, ativo);
+    if (updated.changes === 0) throw new NotFoundError("Nada atualizado");
+    
+    return updated;
+}
+
+export async function excluir(id, userId) {
+    const treino = await buscarPorId(id);
+    if (!treino || treino.user_id !== userId) throw new NotFoundError("Treino não encontrado");
+
+    return await removerPorId(id);
+}
+
+export async function adicionarExercicio(treinoId, userId, nome) {
+    if (!nome || nome.trim() === "") throw new ValidationError("Nome inválido");
+
+    const treino = await buscarPorId(treinoId);
+    if (!treino || treino.user_id !== userId) throw new NotFoundError("Treino não encontrado");
+
+    const nomeEx = await exercicioRepository.buscarPorNome(nome);
+    let exercicioId;
+    if(nomeEx) {
+        exercicioId = nomeEx.id
+    } else {
+        exercicioId = await exercicioRepository.criar(nome);
+    }
+
+    const ordem = ((await buscarUltimaOrdem(treinoId)).max_ordem || 0) + 1;
+
+    await vincularExercicio(treinoId, exercicioId, ordem)
+
+    return { exercicio_id: exercicioId, ordem };
 }
