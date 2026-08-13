@@ -92,10 +92,11 @@ backend/
 - [x] ~~Criar `asyncHandler`~~ — **desnecessário**: confirmei com teste real que o Express 5 (`^5.2.1`, já é o que o projeto usa) encaminha automaticamente `throw`/promise rejeitada de handler `async` pro middleware de erro, sem wrapper nenhum. Isso era coisa de Express 4, não se aplica aqui.
 
 **Fase 2 — Domínio de treinos (primeiro, é o mais simples)**
-- [ ] `repositories/treinoRepository.js` e `repositories/exercicioRepository.js` — extrai as queries de hoje, só isso, sem mudar comportamento
-- [ ] `services/treinoService.js` — validação + a checagem de "esse treino é desse usuário?" vira código explícito aqui (hoje é implícito no `WHERE ... AND user_id = ?`)
-- [ ] `controllers/treinoController.js` + `routes/treinoRoutes.js`
-- [ ] Remove o código equivalente de `server.js`, testa manualmente (listar/criar/editar/ativar/excluir treino) antes de seguir pro próximo domínio
+- [x] `repositories/treinoRepository.js` e `repositories/exercicioRepository.js` — extrai as queries de hoje, só isso, sem mudar comportamento
+- [x] `services/treinoService.js` — validação + a checagem de "esse treino é desse usuário?" vira código explícito aqui (hoje é implícito no `WHERE ... AND user_id = ?`)
+- [x] `controllers/treinoController.js` + `routes/treinoRoutes.js`
+- [x] Remove o código equivalente de `server.js`
+- [ ] Testa manualmente (listar/criar/editar/ativar/excluir treino) — pendente, precisa de `.env` com credenciais Turso (produção ou banco de teste separado) pra subir o servidor local
 
 **Fase 3 — Domínio de execuções (mais complexo, usa `ProgressiveLogic.js`)**
 - [ ] `repositories/execucaoRepository.js` + `repositories/serieRepository.js`

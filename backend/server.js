@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import cors from "cors";
 import cookieParser from 'cookie-parser';
 import { AppError } from "./errors/AppError.js";
+import treinoRoutes from './routes/treinoRoutes.js';
 
 const app = express();
 app.use(express.json());
@@ -18,157 +19,9 @@ app.use(express.static("docs"));
 app.use('/api/auth', authRoutes);
 
 /* =========================
-   TREINOS (Templates) 
+   TREINOS 
 ========================= */
-app.patch('/api/treinos/:id/ativo', requireAuth, async (req, res) => {
-  const { ativo } = req.body
-  await db.prepare(
-    'UPDATE treinos SET ativo = ? WHERE id = ? AND user_id = ?'
-  ).run(ativo ? 1 : 0, req.params.id, req.user.id)
-  res.json({ ok: true })
-})
-
-app.post("/api/treinos", requireAuth, async (req, res) => {
-  const { nome, exercicios } = req.body;
-
-  if (!nome || nome.trim() === "") {
-    return res.status(400).json({ erro: "Nome do treino é obrigatório" });
-  }
-
-  const data_criacao = new Date().toISOString();
-
-  try {
-    const result = await db.prepare("INSERT INTO treinos (nome, data_criacao, user_id) VALUES (?, ?, ?)").run(nome, data_criacao, req.user.id);
-    const treino_id = result.lastInsertRowid;
-
-    if (exercicios && Array.isArray(exercicios)) {
-      for (const [index, ex] of exercicios.entries()) {
-        const nomeExercicio = typeof ex === 'string' ? ex : ex.nome;
-        const tipoExercicio = typeof ex === 'string' ? 'normal' : (ex.tipo || 'normal');
-
-        let exercicio = await db.prepare("SELECT id FROM exercicios WHERE nome = ?").get(nomeExercicio);
-
-        if (!exercicio) {
-          const resEx = await db.prepare("INSERT INTO exercicios (nome) VALUES (?)").run(nomeExercicio);
-          exercicio = { id: resEx.lastInsertRowid };
-        }
-
-        await db.prepare("INSERT INTO treino_exercicios (treino_id, exercicio_id, ordem, tipo) VALUES (?, ?, ?, ?)").run(treino_id, exercicio.id, index + 1, tipoExercicio);
-      }
-    }
-
-    res.json({ id: treino_id, nome, data_criacao });
-  } catch (erro) {
-    res.status(500).json({ erro: erro.message });
-  }
-});
-
-app.get("/api/treinos", requireAuth, async (req, res) => {
-  const treinos = await db.prepare(`
-    SELECT
-      t.id,
-      t.nome,
-      t.data_criacao,
-      t.ativo,
-      COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes
-    FROM treinos t
-    LEFT JOIN execucoes_treino e ON e.treino_id = t.id
-    WHERE t.user_id = ?
-    GROUP BY t.id
-    ORDER BY t.id DESC
-  `).all(req.user.id);
-
-  res.json(treinos);
-});
-
-app.get("/api/treinos/:id", requireAuth, async (req, res) => {
-  const { id } = req.params;
-
-  const treino = await db.prepare("SELECT * FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
-
-  if (!treino) {
-    return res.status(404).json({ erro: "Treino não encontrado" });
-  }
-
-  const exercicios = await db.prepare(`
-    SELECT e.id, e.nome, te.ordem, te.tipo
-    FROM exercicios e
-    JOIN treino_exercicios te ON te.exercicio_id = e.id
-    WHERE te.treino_id = ?
-    ORDER BY te.ordem
-  `).all(id);
-
-  res.json({ ...treino, exercicios });
-});
-
-app.patch("/api/treinos/:id", requireAuth, async (req, res) => {
-  const { id } = req.params;
-  const { nome } = req.body;
-
-  if (!nome || nome.trim() === "") {
-    return res.status(400).json({ erro: "Nome do treino é obrigatório" });
-  }
-
-  try {
-    const treino = await db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
-    if (!treino) {
-      return res.status(404).json({ erro: "Treino não encontrado" });
-    }
-
-    await db.prepare("UPDATE treinos SET nome = ? WHERE id = ?").run(nome.trim(), id);
-    res.json({ sucesso: true, nome: nome.trim() });
-  } catch (erro) {
-    res.status(500).json({ erro: erro.message });
-  }
-});
-
-app.delete("/api/treinos/:id", requireAuth, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const treino = await db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
-    if (!treino) {
-      return res.status(404).json({ erro: "Treino não encontrado" });
-    }
-
-    await db.prepare("DELETE FROM treinos WHERE id = ?").run(id);
-
-    res.json({ sucesso: true });
-  } catch (erro) {
-    res.status(500).json({ erro: erro.message });
-  }
-});
-
-app.post("/api/treinos/:id/exercicios", requireAuth, async (req, res) => {
-  const { id } = req.params;
-  const { nome } = req.body;
-
-  if (!nome || nome.trim() === "") {
-    return res.status(400).json({ erro: "Nome do exercício é obrigatório" });
-  }
-
-  try {
-    const treino = await db.prepare("SELECT id FROM treinos WHERE id = ? AND user_id = ?").get(id, req.user.id);
-    if (!treino) {
-      return res.status(404).json({ erro: "Treino não encontrado" });
-    }
-
-    let exercicio = await db.prepare("SELECT id FROM exercicios WHERE nome = ?").get(nome);
-    if (!exercicio) {
-      const result = await db.prepare("INSERT INTO exercicios (nome) VALUES (?)").run(nome);
-      exercicio = { id: result.lastInsertRowid };
-    }
-
-    const ultimaOrdem = await db.prepare("SELECT MAX(ordem) as max_ordem FROM treino_exercicios WHERE treino_id = ?").get(id);
-    const ordem = (ultimaOrdem?.max_ordem || 0) + 1;
-
-    await db.prepare("INSERT INTO treino_exercicios (treino_id, exercicio_id, ordem) VALUES (?, ?, ?)").run(id, exercicio.id, ordem);
-
-    res.json({ sucesso: true, exercicio_id: exercicio.id, ordem });
-  } catch (erro) {
-    res.status(500).json({ erro: erro.message });
-  }
-});
+app.use('/api/treinos', treinoRoutes);
 
 /* =========================
    EXECUÇÕES DE TREINO
