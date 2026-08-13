@@ -96,7 +96,9 @@ backend/
 - [x] `services/treinoService.js` — validação + a checagem de "esse treino é desse usuário?" vira código explícito aqui (hoje é implícito no `WHERE ... AND user_id = ?`)
 - [x] `controllers/treinoController.js` + `routes/treinoRoutes.js`
 - [x] Remove o código equivalente de `server.js`
-- [ ] Testa manualmente (listar/criar/editar/ativar/excluir treino) — pendente, precisa de `.env` com credenciais Turso (produção ou banco de teste separado) pra subir o servidor local
+- [x] Testa manualmente (listar/criar/editar/ativar/excluir treino) — testado via curl em 2026-08-13 contra o banco de produção (Turso), usando conta de teste dedicada (`contateste`) pra não misturar com dados reais. Todos os 7 endpoints (`POST/GET/PATCH/DELETE /api/treinos`, `PATCH .../ativo`, `POST .../exercicios`) responderam como esperado
+
+**Fase 2 concluída.** ✅
 
 **Fase 3 — Domínio de execuções (mais complexo, usa `ProgressiveLogic.js`)**
 - [ ] `repositories/execucaoRepository.js` + `repositories/serieRepository.js`
