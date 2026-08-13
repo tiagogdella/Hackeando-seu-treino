@@ -8,12 +8,13 @@ export async function listarPorUsuario(userId) {
         t.nome,
         t.data_criacao,
         t.ativo,
-        COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes
+        COUNT(DISTINCT CASE WHEN e.volume_total IS NOT NULL THEN e.id END) as total_execucoes,
+        MAX(CASE WHEN e.volume_total IS NOT NULL THEN e.data_execucao END) as ultima_execucao
       FROM treinos t
       LEFT JOIN execucoes_treino e ON e.treino_id = t.id
       WHERE t.user_id = ?
       GROUP BY t.id
-      ORDER BY t.id DESC
+      ORDER BY t.ativo DESC, ultima_execucao ASC
     `).all(userId);
     return treinos;
 }
