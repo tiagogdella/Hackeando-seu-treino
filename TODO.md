@@ -101,9 +101,13 @@ backend/
 **Fase 2 concluída.** ✅
 
 **Fase 3 — Domínio de execuções (mais complexo, usa `ProgressiveLogic.js`)**
-- [ ] `repositories/execucaoRepository.js` + `repositories/serieRepository.js`
-- [ ] `services/execucaoService.js` — chama `ProgressiveLogic.js` pros cálculos, não duplica a lógica matemática
-- [ ] `controllers/execucaoController.js` + `routes/execucaoRoutes.js`
+- [x] `repositories/execucaoRepository.js` + `repositories/serieRepository.js`
+- [x] `services/execucaoService.js` — chama `ProgressiveLogic.js` pros cálculos, não duplica a lógica matemática
+- [x] `controllers/execucaoController.js` + `routes/execucaoRoutes.js`
+- [x] Remove o código equivalente de `server.js` — bloco `/* EXECUÇÕES DE TREINO */` removido, `execucaoRoutes` montado via `app.use('/api', execucaoRoutes)`
+- [x] Testa manualmente — testado via curl em 2026-08-19 **local** (não contra Render, que ainda deploya a versão antiga) contra o banco de produção (Turso), usando conta de teste nova (`teste`, já que a `contateste` da Fase 2 não existe mais no banco). Os 6 endpoints (`executar`, `ultimo`, `progressao`, `series`, `finalizar`, obter execução) responderam certo, incluindo os cálculos de `delta_volume`/`progresso_percentual`/`delta_reps_por_exercicio` conferidos com uma segunda execução
+
+**Fase 3 concluída.** ✅
 
 **Fase 4 — Domínio de evolução/dashboard**
 - [ ] `services/evolucaoService.js` (pode reaproveitar `execucaoRepository.js`)
