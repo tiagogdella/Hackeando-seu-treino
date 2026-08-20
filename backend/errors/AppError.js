@@ -33,3 +33,9 @@ export class ConflictError extends AppError {
         super(message, 409)
     }
 }
+
+export class UnauthorizedError extends AppError {
+    constructor(message = 'Não autenticado') {
+        super(message, 401)
+    }
+}
