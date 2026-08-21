@@ -114,9 +114,12 @@ backend/
 - [ ] `controllers/evolucaoController.js` + `routes/evolucaoRoutes.js`
 
 **Fase 5 — Alinhar auth ao mesmo padrão** (hoje só tem rota, sem service/repository explícitos)
-- [ ] `repositories/usuarioRepository.js`
-- [ ] `services/authService.js` — a lógica que hoje mora direto em `routes/auth.js` (login, register, hash de senha, emissão de token)
-- [ ] `controllers/authController.js` fino + renomeia `routes/auth.js` pra seguir o mesmo padrão dos outros domínios
+- [x] `repositories/usuarioRepository.js`
+- [x] `services/authService.js` — a lógica que hoje mora direto em `routes/auth.js` (login, register, hash de senha, emissão de token)
+- [x] `controllers/authController.js` fino + `routes/auth.js` fino, só liga verbo+path no controller (mesmo padrão dos outros domínios)
+- [x] Testado manualmente via curl em 2026-08-19 local: register (cria conta nova + auto-login), status, logout, login com conta existente, senha errada (401, confirma fix do bug do `bcrypt.compare` invertido) e username duplicado no register (409) — todos bateram como esperado
+
+**Fase 5 concluída.** ✅
 
 **Fase 6 — Fechar a base pra testes**
 - [ ] Testes unitários pro `ProgressiveLogic.js` (não depende de nada, é o ganho mais fácil e mais importante — é a lógica que hoje não tem nenhuma verificação)
