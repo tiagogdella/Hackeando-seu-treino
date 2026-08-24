@@ -126,6 +126,8 @@ export default {
                 } catch (e) {}
             }
 
+            const continuandoExecucaoAnterior = this.execucaoId === estadoSalvo?.execucaoId
+
             if(!this.execucaoId) {
                 const resExec = await apiFetch(`/api/treinos/${this.treinoId}/executar`, { method: 'POST'})
                 const dadosExec = await resExec.json()
@@ -150,9 +152,12 @@ export default {
                 return { ...ex, isIsometrico, numSeries, series }
             })
 
-            if(estadoSalvo) {
+            if (continuandoExecucaoAnterior) {
                 this.restaurarEstado(estadoSalvo)
                 this.showLog('Treino restaurado - continue de onde parou!', 'info')
+            } else if (estadoSalvo) {
+                // rascunho de uma execução que já foi finalizada antes - descarta, não faz sentido reaproveitar
+                localStorage.removeItem(`treino_estado_${this.treinoId}`)
             }
 
             this.localSaveIntervalId = setInterval(() => this.salvarEstadoLocal(), 30000)
@@ -269,6 +274,14 @@ export default {
                 const resFinal = await apiFetch(`/api/execucoes/${this.execucaoId}/finalizar`, {method: 'POST'})
                 const resultado = await resFinal.json()
 
+                if (!resFinal.ok) {
+                    this.showError(resultado.erro || 'Erro ao finalizar treino')
+                    this.salvando = false
+                    return
+                }
+
+                localStorage.removeItem(`treino_estado_${this.treinoId}`)
+
                 const resProgressao = await apiFetch(`/api/treinos/${this.treinoId}/progressao`)
                 const progressao = await resProgressao.json()
 
@@ -278,7 +291,6 @@ export default {
                 mensagem += ` | Progressão: ${sinal}${progressao.progresso_percentual.toFixed(2)}%`
                 }
 
-                localStorage.removeItem(`treino_estado_${this.treinoId}`)
                 this.showSuccess(mensagem)
 
                 if (progressao.delta_reps_por_exercicio?.length > 0) {
