@@ -122,7 +122,9 @@ backend/
 **Fase 5 concluída.** ✅
 
 **Fase 6 — Fechar a base pra testes**
-- [ ] Testes unitários pro `ProgressiveLogic.js` (não depende de nada, é o ganho mais fácil e mais importante — é a lógica que hoje não tem nenhuma verificação)
+- [x] Testes unitários pro `ProgressiveLogic.js` — 13 testes em `backend/logic/ProgressiveLogic.test.js`, usando `node:test` (runner nativo do Node, zero dependência nova). Cobre a fórmula de Epley, o fator de fadiga em cada faixa de série (inclusive o piso mínimo a partir da 16ª), reordenação por `ordem`, progressão percentual (incluindo guarda contra divisão por zero) e delta de reps
+- [x] CI no GitHub Actions (`.github/workflows/ci.yml`) — roda `npm ci` + `npm run typecheck` + `npm test` a cada push/PR, com credenciais placeholder do Turso (só pra `DB/db.js` não recusar subir; nenhum teste hoje toca o banco de verdade)
+- [x] **Bug encontrado e corrigido**: `npm test` estava quebrado (`node --test backend/` não funciona passando uma pasta nessa versão do Node — tenta rodar a pasta como script principal em vez de procurar testes dentro dela). Corrigido pra glob explícito: `node --test 'backend/**/*.test.js'`. Confirmado rodando de verdade: 13 testes, 13 passando, `typecheck` limpo
 - [ ] Testes pros services usando repository fake/mockado (sem precisar do Turso real — isso também ataca o risco do relatório sobre não ter separação dev/prod: testes automatizados simplesmente não tocam o banco de verdade)
 - [ ] Decidir à parte (fica pendente, não é escopo desta seção) uma solução pra separação dev/prod do banco pra quando o teste for manual/exploratório, tipo o que aconteceu com o "ramon" de teste
 

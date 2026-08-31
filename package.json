@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --env-file-if-exists=.env --test backend/",
+    "test": "node --env-file-if-exists=.env --test 'backend/**/*.test.js'",
     "create-user": "node --env-file-if-exists=.env backend/utils/createUser.js"
   },
   "repository": {
