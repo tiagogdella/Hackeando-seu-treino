@@ -1,6 +1,4 @@
-const API_URL = import.meta.env.DEV
-    ? ''
-    : (import.meta.env.VITE_API_URL || 'https://hackeando-seu-treino.onrender.com')
+const API_URL = ''
 
 // Render (free tier) hiberna o backend após ~15min sem requisições e demora
 // pra "acordar". Esses status/erros indicam isso (proxy fora do ar), não um

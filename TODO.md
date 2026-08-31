@@ -49,7 +49,7 @@ Backlog de melhorias e mudanças futuras do projeto. Cada seção é uma frente 
 - [x] Adicionar link "Criar conta" na `LoginView.vue`, e um link de volta ("Já tenho conta") na tela de registro
 - [x] Testar localmente: username curto/senha curta rejeitados, duplicado (inclusive ignorando maiúsculas) rejeitado com 409, criação bem-sucedida emite cookie JWT correto
 - [ ] Testar em produção pelo navegador (o teste local cobriu a API, falta o fluxo completo pela `RegisterView.vue` de verdade)
-- [ ] Recriar o usuário do Ramon pela tela nova (o cadastro dele nunca chegou a ser feito pela CLI — e o teste local acidentalmente criou e apagou um "ramon" de teste com senha fraca, então não existe nenhum "ramon" no banco agora)
+- [x] ~~Recriar o usuário do Ramon~~ — já existe, como `ramondino` (id 5, criado 07/jul pela CLI). O "ramon" criado/apagado durante teste era outro, sem relação
 - [ ] (opcional, não bloqueante) Considerar rate limit básico na rota de registro, já que fica exposta publicamente sem nenhuma trava hoje
 
 ---
@@ -109,9 +109,47 @@ backend/
 
 **Fase 3 concluída.** ✅
 
-**Fase 4 — Domínio de evolução/dashboard**
-- [ ] `services/evolucaoService.js` (pode reaproveitar `execucaoRepository.js`)
-- [ ] `controllers/evolucaoController.js` + `routes/evolucaoRoutes.js`
+**Fase 4 — Domínio de evolução/dashboard** (adiada de propósito — decisão de 2026, ver abaixo; design já fechado, falta só implementar)
+
+**Decidido: dashboard novo fica enxuto** — substitui o de hoje (3 stat cards + calendário + gráfico de volume) por só isto:
+- Um bloco **"treinos feitos"**: contagem total de execuções finalizadas, somando todos os treinos cadastrados
+- Um gráfico de linha: **"progressão total"** ao longo do tempo
+
+Sai de cena: dias seguidos (streak), calendário mensal, progressão média antiga (não ponderada) e o gráfico de volume por dia.
+
+**A fórmula da progressão total** (discutida e fechada com exemplos — não é média simples nem soma de percentuais):
+
+Motivo de não ser por volume: volume em kg não é comparável entre exercícios diferentes (ex: polia vs halter pro mesmo esforço) — descartado depois de discussão.
+Motivo de não ser soma direta de percentuais: soma cresce sozinha conforme mais treinos são cadastrados, sem significar mais progresso de verdade.
+
+Pra cada dia `d` que teve pelo menos 1 execução finalizada (de qualquer treino):
+
+```
+treinos_ativos_ate_d = todo treino que já teve ≥1 execução finalizada com data ≤ d
+
+peso_i = número de execuções do treino i até o dia d
+percentual_i = (volume_ultima_execucao_ate_d − volume_primeira_execucao_historico) / volume_primeira_execucao_historico × 100
+
+progressão_total(d) = Σ(peso_i × percentual_i) / Σ(peso_i)
+```
+
+Casos-limite resolvidos pela própria matemática, sem `if` especial:
+- Treino com só 1 execução até `d`: primeira = última execução, `percentual_i = 0`, mas entra com peso 1 (não distorce, não precisa excluir)
+- Treino que ainda não existia em `d`: simplesmente não entra na soma daquele dia
+
+**Decidido depois, corrigindo o design original:** sem janela de dias nenhuma — o gráfico mostra o **espaço de tempo total, fixo**, desde o primeiro treino já registrado até hoje. Não é uma janela deslizante (tipo "últimos 90 dias") que soma/esquece pontos com o tempo — cresce conforme o histórico cresce, e nunca corta dado antigo.
+
+### Passos
+- [x] `repositories/evolucaoRepository.js` — uma query só (`listarExecucoesFinalizadas`), traz todas as execuções finalizadas do usuário, ordenadas por treino e data
+- [x] `services/evolucaoService.js` — implementa a fórmula acima, dia a dia, sobre o histórico completo (sem `JANELA_DIAS`, removida depois de feedback)
+- [x] `controllers/evolucaoController.js` + `routes/evolucaoRoutes.js`
+- [x] Remove o bloco antigo `/api/evolucao/dashboard` de `server.js` (e o import morto `db` que sobrou, trocado por só `{ initDB }`)
+- [x] `EvolucaoView.vue` (frontend) — removido calendário, streak e progressão média antiga; gráfico refeito com a série de `progressão_total(d)` (eixo Y agora aceita negativo, com linha tracejada de referência no 0%); mantém só o stat "treinos feitos"
+- [x] Testado manualmente com conta descartável (`teste_fase4_temp`, criada e apagada depois): 1ª execução → 0% (correto, sem base pra comparar ainda); 2ª execução com o dobro do peso → 100% (matematicamente exato)
+
+**Fase 4 concluída.** ✅
+
+**Bug encontrado durante o teste manual do frontend (não é da Fase 4, mas foi achado testando ela):** `src/services/api.js` tinha `API_URL` apontando pra `https://hackeando-seu-treino.onrender.com` como fallback de produção — sobra da arquitetura antiga (frontend no GitHub Pages, backend no Render, origens diferentes). Isso quebrava totalmente o teste local (`npm start` + `localhost:3000`): o app buildado tentava falar com o Render de verdade em vez do servidor local ao lado, e como o CORS do backend só libera `tiagogdella.github.io`, toda chamada falhava e ficava tentando de novo por ~50s (nosso próprio retry de hibernação do Render) antes de desistir — parecia "carregando pra sempre". Corrigido pra `API_URL = ''` (sempre caminho relativo) — funciona igual em dev (proxy do Vite), build local e produção real, já que agora front e back sempre rodam na mesma origem.
 
 **Fase 5 — Alinhar auth ao mesmo padrão** (hoje só tem rota, sem service/repository explícitos)
 - [x] `repositories/usuarioRepository.js`
